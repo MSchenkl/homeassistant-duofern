@@ -275,7 +275,8 @@ async def run(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     try:
-        if args.command == "statusall":
+        if args.command == "statusall" or (args.command == "status" and not args.device):
+            # Broadcast: status without device or explicit statusall
             _filter_device = None
             print(f">> Broadcasting status request to all devices...")
             frame = DuoFernEncoder.build_status_request_broadcast()
