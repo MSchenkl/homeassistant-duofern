@@ -131,8 +131,11 @@ def on_message(frame: bytearray) -> None:
         status = DuoFernDecoder.parse_status(frame)
         print(f"\n{'='*60}")
         print(f"  STATUS from {device_code.hex} ({device_code.device_type_name})")
+        ha_position = 100 - status.position  # HA: 0=closed, 100=open
         print(f"  Position:    {status.position}%"
               f" (DuoFern: 0=open, 100=closed)")
+        print(f"  Position:    {ha_position}%"
+              f" (HomeAssistant: 100=open, 0=closed)")
         print(f"  Moving:      {status.moving}")
         print(f"  Version:     {status.version}")
         print(f"  Automatics:  time={status.time_automatic}"
