@@ -113,6 +113,9 @@ STATUS_WAIT_TIME = 10.0
 # Filter: when set, on_message only shows status from this device
 _filter_device: str | None = None
 
+# Duplicate filter: tracks device codes already shown in this run
+_seen_devices: set[str] = set()
+
 COMMANDS = ["up", "down", "stop", "position", "status", "statusall"]
 
 
@@ -128,6 +131,11 @@ def on_message(frame: bytearray) -> None:
         # Filter: skip if we only want a specific device
         if _filter_device and device_code.hex.upper() != _filter_device:
             return
+        # Duplicate filter: skip if we already showed this device
+        dev_key = device_code.hex.upper()
+        if dev_key in _seen_devices:
+            return
+        _seen_devices.add(dev_key)
         status = DuoFernDecoder.parse_status(frame)
         print(f"\n{'='*60}")
         print(f"  STATUS from {device_code.hex} ({device_code.device_type_name})")
@@ -221,7 +229,8 @@ async def send_to_targets(
 # ---------------------------------------------------------------------------
 async def run(args: argparse.Namespace) -> None:
     """Connect to stick, send command, wait for response."""
-    global _filter_device
+    global _filter_device, _seen_devices
+    _seen_devices = set()  # Reset for each run
 
     system_code = DuoFernId.from_hex(args.system_code)
     paired = [DuoFernId.from_hex(d) for d in PAIRED_DEVICES]
