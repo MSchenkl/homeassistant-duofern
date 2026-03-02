@@ -32,7 +32,7 @@ Protocol implementation is a clean Python re-implementation based on the FHEM mo
 | Description | Code | HA Platform | Tested |
 |-------------|------|-------------|:------:|
 | Universalaktor (2-channel) | `0x43` | `switch` | ❌ |
-| Steckdosenaktor | `0x46` | `switch` | ❌ |
+| Steckdosenaktor (also Universalaktor 1-Channel) | `0x46` | `switch` | ✅ |
 | Troll Comfort DuoFern (Lichtmodus) | `0x71` | `switch` | ❌ |
 
 ### Lights / Dimmers
