@@ -9,23 +9,34 @@ Supports all DuoFern cover device types and status formats:
 
 Each device becomes one CoverEntity with:
   - Open / Close / Stop / Set Position
+  - Dusk position command ("set DEVICENAME dusk" in FHEM)
+  - Dawn position command ("set DEVICENAME dawn" in FHEM)
   - Position reporting (0 = closed, 100 = open in HA convention)
   - Moving state (opening / closing / stopped)
-  - Extra state attributes: all readings from the status frame
-    (sunMode, ventilatingPosition, manualMode, timeAutomatic, etc.)
+  - Extra state attributes: ALL readings from the status frame
+    (sunMode, ventilatingPosition, manualMode, timeAutomatic,
+     dawnAutomatic, duskAutomatic, sunAutomatic, etc.)
   - Device info linked to the hub (USB stick) via via_device
+
+dusk/dawn positions:
+  These are NOT the same as dawnAutomatic/duskAutomatic (which toggle automation).
+  "dusk" explicitly commands the device to move to its programmed dusk position —
+  which is typically slower and quieter than a direct position command.
+  "dawn" commands the device to move to its programmed dawn (open) position.
+
+  From 30_DUOFERN.pm %commands:
+    dusk => {cmd => {noArg => "070901FF000000000000"}}
+    dawn => {cmd => {noArg => "071301FF000000000000"}}
+
+  FHEM commands: set ROLLONAME dusk / set ROLLONAME dawn
+
+  In HA these appear as two extra Buttons on the device card, named
+  "Dusk position" and "Dawn position".
 
 Position convention (matches existing HA addon behaviour):
   DuoFern native: 0 = fully open, 100 = fully closed
   Home Assistant: 0 = fully closed, 100 = fully open
-
-  From 30_DUOFERN.pm (without positionInverse attr, default behaviour):
-    $state = "opened" if ($state eq "0");
-    $state = "closed" if ($state eq "100");
-
-  This module always inverts — same as the original HA addon cover.py:
-    current_cover_position: return 100 - state.status.position
-    async_set_cover_position: duofern_position = 100 - ha_position
+  Always inverted — same as the original HA addon cover.py.
 
 Device class per format:
   Format 21/23/23a: CoverDeviceClass.SHUTTER (roller shutter)
@@ -57,9 +68,7 @@ from .protocol import DuoFernId
 
 _LOGGER = logging.getLogger(__name__)
 
-# Readings that are exposed as extra state attributes.
-# All other readings from ParsedStatus.readings are included automatically.
-# These are excluded because they are already first-class HA properties:
+# Readings exposed as first-class HA properties — skip from extra_state_attributes
 _SKIP_AS_ATTRIBUTE = {"position", "moving"}
 
 
@@ -68,11 +77,7 @@ async def async_setup_entry(
     entry: DuoFernConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up DuoFern cover entities from a config entry.
-
-    One CoverEntity per paired cover device. Channel devices are not
-    covers, so no channel-splitting needed here.
-    """
+    """Set up DuoFern cover entities from a config entry."""
     coordinator: DuoFernCoordinator = entry.runtime_data
 
     entities: list[DuoFernCover] = []
@@ -90,8 +95,6 @@ async def async_setup_entry(
     if entities:
         async_add_entities(entities)
         _LOGGER.info("Added %d DuoFern cover entities", len(entities))
-    else:
-        _LOGGER.warning("No cover devices found in paired device list")
 
 
 class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
@@ -106,7 +109,8 @@ class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
       Rohrmotor Steuerung (0x47): + %setsTroll (no blindsMode)
       Rohrmotor (0x49): + %setsRolloTube
       SX5 (0x4E): %setsSX5
-    All of these are captured in extra_state_attributes from status readings.
+    All commands including dusk/dawn are implemented.
+    All readings are exposed in extra_state_attributes.
     """
 
     _attr_has_entity_name = True
@@ -124,11 +128,9 @@ class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
         self._device_code = device_code
         self._hex_code = device_code.hex
 
-        # Unique ID: domain + device code
         self._attr_unique_id = f"{DOMAIN}_{self._hex_code}"
 
         # Device class: GARAGE for SX5, SHUTTER for all others
-        # From 30_DUOFERN.pm: SX5 (0x4E) uses format "24a" (garage door)
         if device_code.device_type in COVER_DEVICE_TYPES_FORMAT24:
             self._attr_device_class = CoverDeviceClass.GARAGE
         else:
@@ -144,7 +146,6 @@ class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
             | CoverEntityFeature.SET_POSITION
         )
 
-        # Device info — firmware version updated on first status frame
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self._hex_code)},
             name=f"DuoFern {device_code.device_type_name} ({self._hex_code})",
@@ -153,10 +154,6 @@ class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
             sw_version=None,
             via_device=(DOMAIN, coordinator.system_code.hex),
         )
-
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
 
     @property
     def _device_state(self) -> DuoFernDeviceState | None:
@@ -171,11 +168,7 @@ class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
 
     @property
     def available(self) -> bool:
-        """Return True if the device is available.
-
-        False if the coordinator lost contact (MISSING ACK 810108AA)
-        or the coordinator itself failed.
-        """
+        """Return True if the device is available."""
         state = self._device_state
         if state is None:
             return False
@@ -183,15 +176,15 @@ class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
 
     @property
     def current_cover_position(self) -> int | None:
-        """Return current position (HA convention: 0=closed, 100=open).
+        """Return current position (HA: 0=closed, 100=open).
 
-        DuoFern native (from %statusIds invert=100): 0=open, 100=closed.
-        HA convention (matches existing addon): 0=closed, 100=open.
-        Inversion: ha_position = 100 - duofern_position
+        DuoFern native (invert=100): 0=open, 100=closed.
+        HA convention (always inverted, matches existing addon):
+          ha_position = 100 - duofern_position
 
-        From 30_DUOFERN.pm (default, positionInverse not set):
-          $state = "opened" if ($state eq "0");   # DuoFern 0 = open
-          $state = "closed" if ($state eq "100"); # DuoFern 100 = closed
+        From 30_DUOFERN.pm (default, without positionInverse attr):
+          $state = "opened" if ($state eq "0");
+          $state = "closed" if ($state eq "100");
         """
         state = self._device_state
         if state is None or state.status.position is None:
@@ -234,25 +227,22 @@ class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return all device readings as extra state attributes.
 
-        Exposes everything from ParsedStatus.readings that is not already
-        a first-class HA property (position, moving).
+        Exposes ALL readings from ParsedStatus.readings that are not
+        already first-class HA properties (position, moving).
 
-        This includes all readings from the status format:
-          Format 21: sunMode, ventilatingMode, ventilatingPosition,
-                     sunPosition, timeAutomatic, duskAutomatic,
-                     dawnAutomatic, manualMode, runningTime
-          Format 23/23a: + windAutomatic, rainAutomatic, windMode,
-                     rainMode, windDirection, rainDirection, reversal,
-                     motorDeadTime, runningTime, sunMode, sunPosition,
-                     ventilatingMode, ventilatingPosition
-          Format 23 blinds: + slatPosition, slatRunTime, blindsMode,
-                     tiltInSunPos, tiltInVentPos, tiltAfterMoveLevel,
-                     tiltAfterStopDown, defaultSlatPos
-          Format 24a (SX5): obstacle, block, lightCurtain,
-                     automaticClosing, openSpeed, 2000cycleAlarm,
-                     wicketDoor, backJump, 10minuteAlarm, light
-
-        Battery info is also included if available.
+        This includes all automation flags and configuration values:
+          Format 21:  sunMode, ventilatingMode, ventilatingPosition,
+                      sunPosition, timeAutomatic, duskAutomatic,
+                      dawnAutomatic, sunAutomatic, manualMode, runningTime
+          Format 23:  + windAutomatic, rainAutomatic, windMode,
+                      rainMode, windDirection, rainDirection, reversal,
+                      motorDeadTime, runningTime, blindsMode
+          Format 23 blinds: + slatPosition, slatRunTime, tiltInSunPos,
+                      tiltInVentPos, tiltAfterMoveLevel, tiltAfterStopDown,
+                      defaultSlatPos
+          Format 24a (SX5): automaticClosing, openSpeed, 2000cycleAlarm,
+                      wicketDoor, backJump, 10minuteAlarm, light
+                      [obstacle/block/lightCurtain are separate binary_sensors]
         """
         state = self._device_state
         if state is None:
@@ -260,22 +250,18 @@ class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
 
         attrs: dict[str, Any] = {}
 
-        # All readings except those already exposed as HA properties
+        # All readings except first-class HA properties
         for key, value in state.status.readings.items():
             if key not in _SKIP_AS_ATTRIBUTE:
                 attrs[key] = value
 
-        # Firmware version
         if state.status.version:
             attrs["firmware_version"] = state.status.version
 
-        # Battery info (from %sensorMsg battery status frame)
         if state.battery_state is not None:
             attrs["battery_state"] = state.battery_state
         if state.battery_percent is not None:
             attrs["battery_percent"] = state.battery_percent
-
-        # Last seen timestamp
         if state.last_seen is not None:
             attrs["last_seen"] = state.last_seen
 
@@ -288,43 +274,37 @@ class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover (move up).
 
-        From 30_DUOFERN.pm %commands:
-          up => cmd => { "" => {val => "0701", ...} }
+        From 30_DUOFERN.pm: up => cmd => {noArg => "0701tt00000000000000"}
         """
         await self.coordinator.async_cover_up(self._device_code)
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close the cover (move down).
 
-        From 30_DUOFERN.pm %commands:
-          down => cmd => { "" => {val => "0703", ...} }
+        From 30_DUOFERN.pm: down => cmd => {noArg => "0703tt00000000000000"}
         """
         await self.coordinator.async_cover_down(self._device_code)
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop the cover movement.
 
-        From 30_DUOFERN.pm %commands:
-          stop => cmd => { "" => {val => "0702", ...} }
+        From 30_DUOFERN.pm: stop => cmd => {noArg => "07020000000000000000"}
         """
         await self.coordinator.async_cover_stop(self._device_code)
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Move the cover to a specific position.
 
-        HA sends: 0 = closed, 100 = open.
-        DuoFern expects: 0 = open, 100 = closed.
-        Inversion: duofern_position = 100 - ha_position
+        HA: 0=closed, 100=open. DuoFern: 0=open, 100=closed.
+        duofern_position = 100 - ha_position
 
-        From 30_DUOFERN.pm %commands:
-          position => cmd => { "" => {val => "0707", ...} }
-        And the set handler:
-          if ($positionInverse eq "1") { $position = 100 - $position; }
-        We always invert (HA convention), matching the existing addon.
+        From 30_DUOFERN.pm: position => cmd => {value => "0707ttnn000000000000"}
         """
         ha_position: int = kwargs.get("position", 0)
         duofern_position = 100 - ha_position
-        await self.coordinator.async_cover_position(self._device_code, duofern_position)
+        await self.coordinator.async_cover_position(
+            self._device_code, duofern_position
+        )
 
     # ------------------------------------------------------------------
     # Coordinator entity callbacks
@@ -332,21 +312,18 @@ class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator.
-
-        Called automatically by CoordinatorEntity when the coordinator
-        calls async_set_updated_data() after a status frame arrives.
-        Updates firmware version in device registry when first received.
-        """
+        """Handle updated data from the coordinator."""
         state = self._device_state
         if state and state.status.version:
             self._attr_device_info = DeviceInfo(
                 identifiers={(DOMAIN, self._hex_code)},
-                name=f"DuoFern {self._device_code.device_type_name} ({self._hex_code})",
+                name=(
+                    f"DuoFern {self._device_code.device_type_name}"
+                    f" ({self._hex_code})"
+                ),
                 manufacturer="Rademacher",
                 model=self._device_code.device_type_name,
                 sw_version=state.status.version,
                 via_device=(DOMAIN, self.coordinator.system_code.hex),
             )
-
         self.async_write_ha_state()

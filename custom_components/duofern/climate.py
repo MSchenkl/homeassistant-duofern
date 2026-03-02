@@ -106,7 +106,9 @@ class DuoFernClimate(CoordinatorEntity[DuoFernCoordinator], ClimateEntity):
     _attr_name = None
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_hvac_modes = [HVACMode.HEAT, HVACMode.OFF]
-    _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
+    _attr_supported_features = (
+        ClimateEntityFeature.TARGET_TEMPERATURE
+    )
     _attr_target_temperature_step = TEMP_STEP
     _attr_min_temp = TEMP_MIN
     _attr_max_temp = TEMP_MAX
@@ -196,8 +198,7 @@ class DuoFernClimate(CoordinatorEntity[DuoFernCoordinator], ClimateEntity):
         if state is None:
             return {}
         attrs: dict[str, Any] = {
-            k: v
-            for k, v in state.status.readings.items()
+            k: v for k, v in state.status.readings.items()
             if k not in _SKIP_AS_ATTRIBUTE
         }
         if state.status.version:
@@ -248,7 +249,8 @@ class DuoFernClimate(CoordinatorEntity[DuoFernCoordinator], ClimateEntity):
             self._attr_device_info = DeviceInfo(
                 identifiers={(DOMAIN, self._hex_code)},
                 name=(
-                    f"DuoFern {self._device_code.device_type_name} ({self._hex_code})"
+                    f"DuoFern {self._device_code.device_type_name}"
+                    f" ({self._hex_code})"
                 ),
                 manufacturer="Rademacher",
                 model=self._device_code.device_type_name,

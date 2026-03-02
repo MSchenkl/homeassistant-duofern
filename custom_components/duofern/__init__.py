@@ -1,6 +1,6 @@
 """The Rademacher DuoFern integration.
 
-Custom integration for controlling Rademacher DuoFern devices
+Custom integration for controlling Rademacher DuoFern roller shutters
 via the DuoFern USB stick. Uses a clean protocol re-implementation based
 on the FHEM Perl modules (10_DUOFERNSTICK.pm, 30_DUOFERN.pm).
 
@@ -27,6 +27,15 @@ Architecture:
                      Fenster-Tuer-Kontakt — state via duofern_event bus
   sensor.py       → SensorEntity for Umweltsensor weather readings
                      (brightness, temperature, wind, sunDirection, sunHeight)
+  switch.py (2)   → Also creates DuoFernAutomationSwitch (CONFIG) for every
+                     on/off automation flag per device (manualMode,
+                     timeAutomatic, dawnAutomatic, sunAutomatic, etc.)
+  number.py       → NumberEntity (slider) for numeric config values
+                     (sunPosition, ventilatingPosition, slatPosition,
+                     runningTime, stairwellTime, intermediateValue, etc.)
+  select.py       → SelectEntity for multi-option settings
+                     (motorDeadTime, windDirection, automaticClosing,
+                     openSpeed, actTempLimit)
 """
 
 from __future__ import annotations
@@ -52,13 +61,17 @@ PLATFORMS: list[Platform] = [
     Platform.CLIMATE,
     Platform.BINARY_SENSOR,
     Platform.SENSOR,
+    Platform.NUMBER,
+    Platform.SELECT,
 ]
 
 # Type alias for runtime data stored on the config entry
 type DuoFernConfigEntry = ConfigEntry[DuoFernCoordinator]
 
 
-async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+async def async_migrate_entry(
+    hass: HomeAssistant, config_entry: ConfigEntry
+) -> bool:
     """Migrate old config entries to new format.
 
     Version 1 -> 2: Add paired_devices key to entry.data (empty list default).
@@ -69,13 +82,17 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
 
     if config_entry.version == 1:
         new_data = {**config_entry.data, CONF_PAIRED_DEVICES: []}
-        hass.config_entries.async_update_entry(config_entry, data=new_data, version=2)
+        hass.config_entries.async_update_entry(
+            config_entry, data=new_data, version=2
+        )
         _LOGGER.info("Migrated DuoFern config entry to version 2")
 
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: DuoFernConfigEntry) -> bool:
+async def async_setup_entry(
+    hass: HomeAssistant, entry: DuoFernConfigEntry
+) -> bool:
     """Set up DuoFern from a config entry.
 
     Called by HA when the user completes the config flow or on HA startup
@@ -122,7 +139,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DuoFernConfigEntry) -> b
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, system_code.hex)},
         manufacturer="Rademacher",
-        model="DuoFern USB-Stick",
+        model="DuoFern USB-Stick 7000",
         name=f"DuoFern Stick ({system_code.hex})",
     )
 
@@ -135,7 +152,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: DuoFernConfigEntry) -> b
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: DuoFernConfigEntry) -> bool:
+async def async_unload_entry(
+    hass: HomeAssistant, entry: DuoFernConfigEntry
+) -> bool:
     """Unload a DuoFern config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
@@ -146,6 +165,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: DuoFernConfigEntry) -> 
     return unload_ok
 
 
-async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def _async_update_listener(
+    hass: HomeAssistant, entry: ConfigEntry
+) -> None:
     """Handle config entry updates (reload integration)."""
     await hass.config_entries.async_reload(entry.entry_id)

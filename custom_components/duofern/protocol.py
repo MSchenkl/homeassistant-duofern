@@ -67,7 +67,6 @@ _LOGGER = logging.getLogger(__name__)
 # Data classes
 # ---------------------------------------------------------------------------
 
-
 @dataclass(frozen=True)
 class DuoFernId:
     """A 3-byte DuoFern identifier stored as bytes.
@@ -93,7 +92,6 @@ class DuoFernId:
 
     @classmethod
     def from_hex(cls, hex_str: str) -> "DuoFernId":
-        """Create from a 6-character hex string like '40ABCD'."""
         h = hex_str.upper().strip()
         if len(h) != 6:
             raise ValueError(f"Expected 6 hex chars, got {len(h)}: {hex_str!r}")
@@ -101,10 +99,7 @@ class DuoFernId:
 
     @classmethod
     def from_hex_with_channel(cls, hex_str: str) -> "DuoFernId":
-        """Create from an 8-character hex string like '43ABCD01'.
-
-        The last 2 chars are the channel number (chanNo in FHEM).
-        """
+        """Create from 8-character hex string like '43ABCD01'."""
         h = hex_str.upper().strip()
         if len(h) == 8:
             return cls(raw=bytes.fromhex(h[:6]), channel=h[6:8])
@@ -113,76 +108,60 @@ class DuoFernId:
         raise ValueError(f"Expected 6 or 8 hex chars, got {len(h)}: {hex_str!r}")
 
     def with_channel(self, channel: str) -> "DuoFernId":
-        """Return a new DuoFernId with the given channel suffix."""
         return DuoFernId(raw=self.raw, channel=channel)
 
     @property
     def hex(self) -> str:
-        """Return uppercase 6-char hex of the base device code."""
         return self.raw.hex().upper()
 
     @property
     def full_hex(self) -> str:
-        """Return uppercase 6- or 8-char hex including channel if present."""
         if self.channel:
             return self.hex + self.channel
         return self.hex
 
     @property
     def device_type(self) -> int:
-        """Return the first byte (device type discriminator)."""
         return self.raw[0]
 
     @property
     def device_type_name(self) -> str:
-        """Return human-readable device type name from %devices in 30_DUOFERN.pm."""
         return DEVICE_TYPES.get(self.raw[0], f"Unknown (0x{self.raw[0]:02X})")
-
-    # -- Platform classification --
 
     @property
     def is_cover(self) -> bool:
-        """True if this device is a roller shutter / cover."""
         return self.raw[0] in COVER_DEVICE_TYPES
 
     @property
     def is_light(self) -> bool:
-        """True if this device is a dimmer / light."""
         return self.raw[0] in LIGHT_DEVICE_TYPES
 
     @property
     def is_switch(self) -> bool:
-        """True if this device is a switch actor."""
         return self.raw[0] in SWITCH_DEVICE_TYPES
 
     @property
     def is_climate(self) -> bool:
-        """True if this device is a thermostat / climate device."""
         return self.raw[0] in CLIMATE_DEVICE_TYPES
 
     @property
     def is_binary_sensor(self) -> bool:
-        """True if this device is a binary sensor."""
         return self.raw[0] in BINARY_SENSOR_DEVICE_TYPES
 
     @property
     def is_sensor(self) -> bool:
-        """True if this device is a weather / environment sensor."""
         return self.raw[0] in SENSOR_DEVICE_TYPES
 
     @property
     def is_remote(self) -> bool:
-        """True if this device is a remote control / wall button."""
         return self.raw[0] in REMOTE_DEVICE_TYPES
 
     @property
     def has_channels(self) -> bool:
-        """True if this device type exposes sub-channels (chanNo in FHEM)."""
         return self.raw[0] in DEVICE_CHANNELS
 
     @property
     def channel_list(self) -> list[str]:
-        """Return list of channel suffixes for this device type (e.g. ['01','02'])."""
         return DEVICE_CHANNELS.get(self.raw[0], [])
 
     def __repr__(self) -> str:
@@ -201,9 +180,6 @@ class DuoFernId:
 class ParsedStatus:
     """Result of parsing a DuoFern status frame.
 
-    Contains raw key/value readings extracted via %statusIds bit extraction,
-    plus derived high-level fields for quick entity access.
-
     Position convention (matches existing HA addon behaviour):
       position field is stored in DuoFern-native: 0 = open, 100 = closed.
       cover.py inverts on read/write: ha_pos = 100 - duofern_pos.
@@ -211,50 +187,40 @@ class ParsedStatus:
     From 30_DUOFERN.pm state determination after parsing:
       if ($format =~ m/^(21|23|23a|24|24a)/) {
         $state = $statusValue{position} if defined($statusValue{position});
-        # without positionInverse: 0 = opened, 100 = closed
         $state = "opened" if ($state eq "0");
         $state = "closed" if ($state eq "100");
       }
     """
 
-    # Raw readings dict: reading_name -> value (int, float, str, or bool)
-    # Populated from %statusIds / %statusGroups / %statusMapping in FHEM.
     readings: dict[str, object] = field(default_factory=dict)
+    position: int | None = None     # 0=open, 100=closed (DuoFern native)
+    level: int | None = None        # 0-100
+    moving: str = "stop"
+    version: str | None = None
 
-    # High-level derived fields (for quick access by entities)
-    position: int | None = None  # covers: 0=open, 100=closed (DuoFern native)
-    level: int | None = None  # dimmers/switches: 0-100
-    moving: str = "stop"  # "stop" | "up" | "down"
-    version: str | None = None  # firmware version "X.Y"
-
-    # Thermostat fields (from format 27 / 29)
     measured_temp: float | None = None
     desired_temp: float | None = None
 
-    # Error / protocol flags
-    missing_ack: bool = False  # NACK 810108AA: Befehl nicht vom Aktor empfangen
-    not_initialized: bool = False  # NACK 81010C55: Aktor nicht initialisiert
+    missing_ack: bool = False       # NACK 810108AA
+    not_initialized: bool = False   # NACK 81010C55
 
-    # Set by decoder after parsing
     device_code: str | None = None
     channel: str | None = None
 
 
 @dataclass
 class SensorEvent:
-    """Represents a sensor / button event message.
+    """Sensor / button event message.
 
     From 30_DUOFERN.pm:
       #Wandtaster, Funksender UP, Handsender, Sensoren
-      Fired when a remote, wall switch, motion detector etc. sends a message.
-      Used to fire HA events — not persistent state.
     """
 
-    device_code: str  # 6-char hex base code
-    channel: str  # "00", "01", "02", ...
-    event_name: str  # from %sensorMsg "name" key
-    state: str | None = None  # from %sensorMsg "state" key (optional)
-    raw_msg_id: str = ""  # 4-char hex message ID (e.g. "0701")
+    device_code: str
+    channel: str
+    event_name: str
+    state: str | None = None
+    raw_msg_id: str = ""
 
 
 @dataclass
@@ -265,186 +231,145 @@ class WeatherData:
       #Umweltsensor Wetter
     """
 
-    brightness: float | None = None  # lux
-    sun_direction: float | None = None  # degrees
-    sun_height: float | None = None  # degrees above horizon
-    temperature: float | None = None  # °C
+    brightness: float | None = None
+    sun_direction: float | None = None
+    sun_height: float | None = None
+    temperature: float | None = None
     is_raining: bool | None = None
-    wind: float | None = None  # m/s
+    wind: float | None = None
 
 
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
 
-
 class CoverCommand(IntEnum):
-    """Cover command codes.
-
-    From 30_DUOFERN.pm %commands:
-      up    => cmd => { "" => {val => "0701", ...} }
-      stop  => cmd => { "" => {val => "0702", ...} }
-      down  => cmd => { "" => {val => "0703", ...} }
-      pos   => cmd => { "" => {val => "0707", ...} }
-      toggle=> cmd => { "" => {val => "071A", ...} }
-    """
-
-    UP = 0x0701
-    STOP = 0x0702
-    DOWN = 0x0703
+    """Cover command codes from 30_DUOFERN.pm %commands."""
+    UP       = 0x0701
+    STOP     = 0x0702
+    DOWN     = 0x0703
     POSITION = 0x0707
-    TOGGLE = 0x071A
+    TOGGLE   = 0x071A
+    DUSK     = 0x0709   # dusk => "070901FF000000000000"
+    DAWN     = 0x0713   # dawn => "071301FF000000000000"
 
 
 class SwitchCommand(IntEnum):
-    """Switch / dimmer on/off command codes.
-
-    From 30_DUOFERN.pm %commands:
-      off => cmd => { "" => {val => "0E02", ...} }
-      on  => cmd => { "" => {val => "0E03", ...} }
-    """
-
+    """Switch / dimmer on/off from 30_DUOFERN.pm %commands."""
     OFF = 0x0E02
-    ON = 0x0E03
+    ON  = 0x0E03
+
+
+class AutomationCommand(IntEnum):
+    """Automation on/off command codes from 30_DUOFERN.pm %commands.
+
+    Pattern: 0804/0805/0806/0807/0808/0809/0801/0802...
+    on  = FD, off = FE suffix.
+    """
+    SUN_AUTOMATIC_ON      = 0x0801
+    VENTILATING_MODE_ON   = 0x0802
+    TIME_AUTOMATIC_ON     = 0x0804
+    DUSK_AUTOMATIC_ON     = 0x0805
+    MANUAL_MODE_ON        = 0x0806
+    WIND_AUTOMATIC_ON     = 0x0807
+    RAIN_AUTOMATIC_ON     = 0x0808
+    DAWN_AUTOMATIC_ON     = 0x0809
 
 
 class MessageType(IntEnum):
-    """Top-level message type byte (byte 0 of every frame).
-
-    From 10_DUOFERNSTICK.pm init sequence and dispatch logic.
-    """
-
-    INIT1 = 0x01  # duoInit1
-    SET_PAIRS = 0x03  # duoSetPairs
-    START_PAIR = 0x04  # duoStartPair
-    STOP_PAIR = 0x05  # duoStopPair
-    PAIR_RESP = 0x06  # pair / unpair response from device
-    START_UNPAIR = 0x07  # duoStartUnpair
-    STOP_UNPAIR = 0x08  # duoStopUnpair
-    SET_DONGLE = 0x0A  # duoSetDongle
-    COMMAND = 0x0D  # duoCommand (all actor commands)
-    INIT2 = 0x0E  # duoInit2
-    STATUS = 0x0F  # status response from actor
-    INIT_END = 0x10  # duoInitEnd
-    INIT3 = 0x14  # duoInit3
-    ACK = 0x81  # duoACK
+    """Top-level message type byte. From 10_DUOFERNSTICK.pm."""
+    INIT1        = 0x01
+    SET_PAIRS    = 0x03
+    START_PAIR   = 0x04
+    STOP_PAIR    = 0x05
+    PAIR_RESP    = 0x06
+    START_UNPAIR = 0x07
+    STOP_UNPAIR  = 0x08
+    SET_DONGLE   = 0x0A
+    COMMAND      = 0x0D
+    INIT2        = 0x0E
+    STATUS       = 0x0F
+    INIT_END     = 0x10
+    INIT3        = 0x14
+    ACK          = 0x81
 
 
 # ---------------------------------------------------------------------------
-# Encoder — builds raw frames as bytearray
+# Encoder
 # ---------------------------------------------------------------------------
-
 
 class DuoFernEncoder:
-    """Builds DuoFern protocol frames.
-
-    All methods return a bytearray of exactly FRAME_SIZE_BYTES (22) bytes.
-    Uses explicit byte placement instead of FHEM's string-replacement approach:
-      $buf =~ s/zzzzzz/$systemCode/;   # FHEM style — we avoid this
-      $buf =~ s/yyyyyy/$deviceCode/;
+    """Builds DuoFern protocol frames as bytearray.
 
     Frame template from 30_DUOFERN.pm:
       my $duoCommand = "0Dccnnnnnnnnnnnnnnnnnnnn000000zzzzzzyyyyyy00"
-        cc      = channel byte
-        nnn...  = 10-byte command payload
-        000000  = reserved
-        zzzzzz  = system code (dongle serial)
-        yyyyyy  = device code
+        cc     = channel byte
+        nnn... = 10-byte command payload
+        000000 = reserved
+        zzzzzz = system code
+        yyyyyy = device code
     """
 
     @staticmethod
     def _frame() -> bytearray:
-        """Return a zeroed 22-byte frame."""
         return bytearray(FRAME_SIZE_BYTES)
 
-    # -- Initialization sequence (DUOFERNSTICK_DoInit) --
+    # -- Init sequence (DUOFERNSTICK_DoInit) --
 
     @staticmethod
     def build_init1() -> bytearray:
         """duoInit1 = '01000000...'"""
-        f = DuoFernEncoder._frame()
-        f[0] = 0x01
-        return f
+        f = DuoFernEncoder._frame(); f[0] = 0x01; return f
 
     @staticmethod
     def build_init2() -> bytearray:
         """duoInit2 = '0E000000...'"""
-        f = DuoFernEncoder._frame()
-        f[0] = 0x0E
-        return f
+        f = DuoFernEncoder._frame(); f[0] = 0x0E; return f
 
     @staticmethod
     def build_set_dongle(system_code: DuoFernId) -> bytearray:
-        """duoSetDongle = '0Azzzzzz000100...'
-
-        Places system code at bytes 1-3, then 0x0001 at bytes 4-5.
-        """
+        """duoSetDongle = '0Azzzzzz000100...'"""
         f = DuoFernEncoder._frame()
-        f[0] = 0x0A
-        f[1:4] = system_code.raw
-        f[4] = 0x00
-        f[5] = 0x01
+        f[0] = 0x0A; f[1:4] = system_code.raw; f[4] = 0x00; f[5] = 0x01
         return f
 
     @staticmethod
     def build_init3() -> bytearray:
         """duoInit3 = '14140000...'"""
-        f = DuoFernEncoder._frame()
-        f[0] = 0x14
-        f[1] = 0x14
-        return f
+        f = DuoFernEncoder._frame(); f[0] = 0x14; f[1] = 0x14; return f
 
     @staticmethod
     def build_set_pair(index: int, device_code: DuoFernId) -> bytearray:
-        """duoSetPairs = '03nnyyyyyy0000...'
-
-        index: 0-based pair slot number (nn in template).
-        From DUOFERNSTICK_DoInit: sends one frame per paired device.
-        """
+        """duoSetPairs = '03nnyyyyyy0000...'"""
         f = DuoFernEncoder._frame()
-        f[0] = 0x03
-        f[1] = index & 0xFF
-        f[2:5] = device_code.raw
+        f[0] = 0x03; f[1] = index & 0xFF; f[2:5] = device_code.raw
         return f
 
     @staticmethod
     def build_init_end() -> bytearray:
         """duoInitEnd = '10010000...'"""
-        f = DuoFernEncoder._frame()
-        f[0] = 0x10
-        f[1] = 0x01
-        return f
+        f = DuoFernEncoder._frame(); f[0] = 0x10; f[1] = 0x01; return f
 
     @staticmethod
     def build_ack() -> bytearray:
         """duoACK = '81000000...'
 
-        Sent by the host to acknowledge every non-ACK message from the stick.
         From DUOFERNSTICK_Parse: if not ACK -> send ACK back immediately.
         """
-        f = DuoFernEncoder._frame()
-        f[0] = 0x81
-        return f
+        f = DuoFernEncoder._frame(); f[0] = 0x81; return f
 
     # -- Status requests --
 
     @staticmethod
     def build_status_request_broadcast() -> bytearray:
-        """duoStatusRequest — broadcast to all devices (FFFFFF).
+        """duoStatusRequest broadcast (FFFFFF).
 
         From 10_DUOFERNSTICK.pm:
-          my $duoStatusRequest = "0DFF0F400000000000000000000000000000FFFFFF01"
-        Bytes 18-20 = FF FF FF = broadcast device address.
+          "0DFF0F400000000000000000000000000000FFFFFF01"
         """
         f = DuoFernEncoder._frame()
-        f[0] = 0x0D
-        f[1] = 0xFF
-        f[2] = 0x0F
-        f[3] = 0x40
-        f[18] = 0xFF
-        f[19] = 0xFF
-        f[20] = 0xFF
-        f[21] = 0x01
+        f[0]=0x0D; f[1]=0xFF; f[2]=0x0F; f[3]=0x40
+        f[18]=0xFF; f[19]=0xFF; f[20]=0xFF; f[21]=0x01
         return f
 
     @staticmethod
@@ -457,17 +382,10 @@ class DuoFernEncoder:
 
         From 30_DUOFERN.pm:
           $duoStatusRequest = "0DFFnn400000000000000000000000000000yyyyyy01"
-          nn = status type (0F = normal status, 13 = weather, 10 = time)
-        Note: no system code in this template (bytes 15-17 stay zero).
         """
         f = DuoFernEncoder._frame()
-        f[0] = 0x0D
-        f[1] = 0xFF
-        f[2] = status_type
-        f[3] = 0x40
-        # bytes 15-17: zero (no system code for status requests, per FHEM)
-        f[18:21] = device_code.raw
-        f[21] = 0x01
+        f[0]=0x0D; f[1]=0xFF; f[2]=status_type; f[3]=0x40
+        f[18:21] = device_code.raw; f[21]=0x01
         return f
 
     # -- Cover / actor commands --
@@ -483,16 +401,17 @@ class DuoFernEncoder:
     ) -> bytearray:
         """Build a cover command frame.
 
-        From 30_DUOFERN.pm:
-          my $duoCommand = "0Dccnnnnnnnnnnnnnnnnnnnn000000zzzzzzyyyyyy00"
-          up    = "0701tt00000000000000"  (tt = timer flag)
+        From 30_DUOFERN.pm %commands:
+          up    = "0701tt00000000000000"  tt = timer flag
           stop  = "07020000000000000000"
           down  = "0703tt00000000000000"
-          pos   = "0707ttnn000000000000" (nn = position, 0=open 100=closed)
+          pos   = "0707ttnn000000000000"  nn = position (0=open,100=closed)
           toggle= "071A0000000000000000"
+          dusk  = "070901FF000000000000"  move to dusk position
+          dawn  = "071301FF000000000000"  move to dawn position
 
-        Position is passed in DuoFern-native convention (0=open, 100=closed).
-        The inversion from HA convention is done in cover.py before calling here.
+        dusk/dawn are explicit position commands, not the same as duskAutomatic.
+        Position is DuoFern-native (0=open,100=closed); inversion in cover.py.
         """
         f = DuoFernEncoder._frame()
         f[0] = 0x0D
@@ -502,27 +421,51 @@ class DuoFernEncoder:
         timer_byte = 0x01 if timer else 0x00
 
         if command in (CoverCommand.UP, CoverCommand.DOWN):
-            # tt = timer flag at byte 4
             f[4] = timer_byte
         elif command == CoverCommand.POSITION:
             f[4] = timer_byte
-            # nn = position value at byte 5
-            # Expects DuoFern-native: 0=open, 100=closed
             if position is not None:
                 f[5] = max(0, min(100, position))
             else:
                 _LOGGER.warning("POSITION command sent without position value")
-        # STOP and TOGGLE: no extra parameters
+        elif command == CoverCommand.DUSK:
+            # dusk = "070901FF000000000000"
+            f[4] = 0x01; f[5] = 0xFF
+        elif command == CoverCommand.DAWN:
+            # dawn = "071301FF000000000000"
+            f[4] = 0x01; f[5] = 0xFF
+        # STOP, TOGGLE: no extra parameters
 
-        # bytes 12-14: reserved zeros (000000 in template)
-        # bytes 15-17: zzzzzz = system code
         f[15:18] = system_code.raw
-        # bytes 18-20: yyyyyy = device code
         f[18:21] = device_code.raw
-        # byte 21: 00
         return f
 
-    # -- Switch / dimmer commands --
+    @staticmethod
+    def build_generic_command(
+        cmd_bytes: bytes,
+        device_code: DuoFernId,
+        system_code: DuoFernId,
+        channel: int = 0x01,
+    ) -> bytearray:
+        """Build a generic command from a 10-byte payload.
+
+        Used for automation commands (sunAutomatic, timeAutomatic, etc.)
+        where the payload is known from %commands in 30_DUOFERN.pm.
+
+        From 30_DUOFERN.pm: $duoCommand = "0Dccnnnnnnnnnnnnnnnnnnnn000000zzzzzzyyyyyy00"
+          cc      = channel
+          nnnnn.. = 10-byte payload (cmd_bytes)
+          zzzzzz  = system code
+          yyyyyy  = device code
+        """
+        f = DuoFernEncoder._frame()
+        f[0] = 0x0D
+        f[1] = channel
+        for i, b in enumerate(cmd_bytes[:10]):
+            f[2 + i] = b
+        f[15:18] = system_code.raw
+        f[18:21] = device_code.raw
+        return f
 
     @staticmethod
     def build_switch_command(
@@ -532,21 +475,17 @@ class DuoFernEncoder:
         channel: int = 0x01,
         timer: bool = False,
     ) -> bytearray:
-        """Build an on/off command for switch actors and dimmers.
+        """Build on/off command.
 
         From 30_DUOFERN.pm %commands:
           off => "0E02tt00000000000000"
           on  => "0E03tt00000000000000"
-        Uses same duoCommand frame template as cover commands.
         """
         f = DuoFernEncoder._frame()
-        f[0] = 0x0D
-        f[1] = channel
-        f[2] = (command >> 8) & 0xFF
-        f[3] = command & 0xFF
-        f[4] = 0x01 if timer else 0x00
-        f[15:18] = system_code.raw
-        f[18:21] = device_code.raw
+        f[0]=0x0D; f[1]=channel
+        f[2]=(command>>8)&0xFF; f[3]=command&0xFF
+        f[4]=0x01 if timer else 0x00
+        f[15:18]=system_code.raw; f[18:21]=device_code.raw
         return f
 
     @staticmethod
@@ -557,109 +496,102 @@ class DuoFernEncoder:
         channel: int = 0x01,
         timer: bool = False,
     ) -> bytearray:
-        """Build a level (0-100) command for dimmers.
+        """Build level command for dimmers.
 
         From 30_DUOFERN.pm %commands:
-          position => "0707ttnn000000000000"  (same encoding as cover position)
+          level => "0707ttnn000000000000"
         """
         f = DuoFernEncoder._frame()
-        f[0] = 0x0D
-        f[1] = channel
-        f[2] = 0x07
-        f[3] = 0x07
-        f[4] = 0x01 if timer else 0x00
-        f[5] = max(0, min(100, level))
-        f[15:18] = system_code.raw
-        f[18:21] = device_code.raw
+        f[0]=0x0D; f[1]=channel; f[2]=0x07; f[3]=0x07
+        f[4]=0x01 if timer else 0x00
+        f[5]=max(0,min(100,level))
+        f[15:18]=system_code.raw; f[18:21]=device_code.raw
+        return f
+
+    @staticmethod
+    def build_desired_temp_command(
+        temp: float,
+        device_code: DuoFernId,
+        system_code: DuoFernId,
+        timer: bool = False,
+    ) -> bytearray:
+        """Build desired-temp command for Raumthermostat / HSA.
+
+        From 30_DUOFERN.pm %commands:
+          desired-temp => "0722tt0000wwww000000"
+          min=-40, max=80, multi=10, offset=400
+          ww = (temp * 10 + 400) as 16-bit big-endian
+        """
+        f = DuoFernEncoder._frame()
+        f[0]=0x0D; f[1]=0x01; f[2]=0x07; f[3]=0x22
+        f[4]=0x01 if timer else 0x00
+        # ww at bytes 6-7 (offset 6 in payload = frame bytes 8-9)
+        ww = int(temp * 10 + 400)
+        ww = max(0, min(0xFFFF, ww))
+        f[8] = (ww >> 8) & 0xFF
+        f[9] = ww & 0xFF
+        f[15:18]=system_code.raw; f[18:21]=device_code.raw
         return f
 
     # -- Pairing --
 
     @staticmethod
     def build_start_pair() -> bytearray:
-        """duoStartPair = '04000000...' — starts 60s pairing window."""
-        f = DuoFernEncoder._frame()
-        f[0] = 0x04
-        return f
+        """duoStartPair = '04000000...'"""
+        f = DuoFernEncoder._frame(); f[0]=0x04; return f
 
     @staticmethod
     def build_stop_pair() -> bytearray:
-        """duoStopPair = '05000000...' — ends pairing window."""
-        f = DuoFernEncoder._frame()
-        f[0] = 0x05
-        return f
+        """duoStopPair = '05000000...'"""
+        f = DuoFernEncoder._frame(); f[0]=0x05; return f
 
     @staticmethod
     def build_start_unpair() -> bytearray:
-        """duoStartUnpair = '07000000...' — starts 60s unpairing window."""
-        f = DuoFernEncoder._frame()
-        f[0] = 0x07
-        return f
+        """duoStartUnpair = '07000000...'"""
+        f = DuoFernEncoder._frame(); f[0]=0x07; return f
 
     @staticmethod
     def build_stop_unpair() -> bytearray:
-        """duoStopUnpair = '08000000...' — ends unpairing window."""
-        f = DuoFernEncoder._frame()
-        f[0] = 0x08
-        return f
+        """duoStopUnpair = '08000000...'"""
+        f = DuoFernEncoder._frame(); f[0]=0x08; return f
 
     @staticmethod
     def build_remote_pair(device_code: DuoFernId) -> bytearray:
-        """duoRemotePair — sends pairing command directly to a device.
+        """duoRemotePair — direct pairing without physical button.
 
         From 10_DUOFERNSTICK.pm:
-          duoRemotePair = "0D0106010000000000000000000000000000yyyyyy00"
-        Used to pair without pressing the physical button on the device.
+          "0D0106010000000000000000000000000000yyyyyy00"
         """
         f = DuoFernEncoder._frame()
-        f[0] = 0x0D
-        f[1] = 0x01
-        f[2] = 0x06
-        f[3] = 0x01
-        f[18:21] = device_code.raw
+        f[0]=0x0D; f[1]=0x01; f[2]=0x06; f[3]=0x01
+        f[18:21]=device_code.raw
         return f
 
 
 # ---------------------------------------------------------------------------
-# Decoder — parses raw frames
+# Decoder
 # ---------------------------------------------------------------------------
 
-
 class DuoFernDecoder:
-    """Parses DuoFern protocol frames into typed Python objects.
-
-    Input is always a bytearray of 22 bytes or a 44-char hex string.
-    Parsing logic is transcribed from DUOFERN_Parse in 30_DUOFERN.pm
-    and DUOFERNSTICK_Parse in 10_DUOFERNSTICK.pm.
-    """
-
-    # -- Frame validation --
+    """Parses DuoFern protocol frames into typed Python objects."""
 
     @staticmethod
     def _ensure_bytes(data: bytes | bytearray | str) -> bytearray:
         if isinstance(data, str):
             if len(data) != FRAME_SIZE_HEX:
-                raise ValueError(
-                    f"Hex string must be {FRAME_SIZE_HEX} chars, got {len(data)}"
-                )
+                raise ValueError(f"Hex string must be {FRAME_SIZE_HEX} chars, got {len(data)}")
             return bytearray.fromhex(data)
         if isinstance(data, (bytes, bytearray)):
             if len(data) != FRAME_SIZE_BYTES:
-                raise ValueError(
-                    f"Frame must be {FRAME_SIZE_BYTES} bytes, got {len(data)}"
-                )
+                raise ValueError(f"Frame must be {FRAME_SIZE_BYTES} bytes, got {len(data)}")
             return bytearray(data)
         raise TypeError(f"Unsupported type: {type(data)}")
 
-    # -- Message type checks --
-    # All patterns from DUOFERNSTICK_Parse / DUOFERN_Parse in FHEM.
+    # -- Message type checks (all from DUOFERNSTICK_Parse / DUOFERN_Parse) --
 
     @staticmethod
     def is_ack(data: bytes | bytearray | str) -> bool:
-        """Frame is a generic ACK (0x81...).
-
-        From 10_DUOFERNSTICK.pm: if ($msg =~ m/^81/) { ... }
-        """
+        """Frame is a generic ACK (0x81...). From 10_DUOFERNSTICK.pm."""
         return DuoFernDecoder._ensure_bytes(data)[0] == MessageType.ACK
 
     @staticmethod
@@ -669,145 +601,88 @@ class DuoFernDecoder:
         From 30_DUOFERN.pm:
           #Status Nachricht Aktor
           if ($msg =~ m/0FFF0F.{38}/) { ... }
-        Byte 0 = 0x0F, Byte 1 = 0xFF, Byte 2 = 0x0F.
         """
         f = DuoFernDecoder._ensure_bytes(data)
-        return f[0] == 0x0F and f[1] == 0xFF and f[2] == 0x0F
+        return f[0]==0x0F and f[1]==0xFF and f[2]==0x0F
 
     @staticmethod
     def is_pair_response(data: bytes | bytearray | str) -> bool:
-        """Device paired confirmation.
-
-        From 30_DUOFERN.pm:
-          #Device paired
-          if ($msg =~ m/^0602/) { ... }
-        """
+        """#Device paired — if ($msg =~ m/^0602/) { ... }"""
         f = DuoFernDecoder._ensure_bytes(data)
-        return f[0] == 0x06 and f[1] == 0x02
+        return f[0]==0x06 and f[1]==0x02
 
     @staticmethod
     def is_unpair_response(data: bytes | bytearray | str) -> bool:
-        """Device unpaired confirmation.
-
-        From 30_DUOFERN.pm:
-          #Device unpaired
-          if ($msg =~ m/^0603/) { ... }
-        """
+        """#Device unpaired — if ($msg =~ m/^0603/) { ... }"""
         f = DuoFernDecoder._ensure_bytes(data)
-        return f[0] == 0x06 and f[1] == 0x03
+        return f[0]==0x06 and f[1]==0x03
 
     @staticmethod
     def is_sensor_message(data: bytes | bytearray | str) -> bool:
-        """Sensor / button event message.
-
-        From 30_DUOFERN.pm:
-          #Wandtaster, Funksender UP, Handsender, Sensoren
-          if ($msg =~ m/0F..(07|0E)/) { ... }
-        """
+        """#Wandtaster, Funksender UP, Handsender, Sensoren"""
         f = DuoFernDecoder._ensure_bytes(data)
-        return f[0] == 0x0F and f[2] in (0x07, 0x0E)
+        return f[0]==0x0F and f[2] in (0x07, 0x0E)
 
     @staticmethod
     def is_weather_data(data: bytes | bytearray | str) -> bool:
-        """Umweltsensor weather data.
-
-        From 30_DUOFERN.pm:
-          #Umweltsensor Wetter
-          if ($msg =~ m/0F..1322/) { ... }
-        """
+        """#Umweltsensor Wetter — if ($msg =~ m/0F..1322/) { ... }"""
         f = DuoFernDecoder._ensure_bytes(data)
-        return f[0] == 0x0F and f[2] == 0x13 and f[3] == 0x22
+        return f[0]==0x0F and f[2]==0x13 and f[3]==0x22
 
     @staticmethod
     def is_time_response(data: bytes | bytearray | str) -> bool:
-        """Time response from Umweltsensor / Handzentrale.
-
-        From 30_DUOFERN.pm:
-          #Umweltsensor/Handzentrale Zeit
-          if ($msg =~ m/0F..1020/) { ... }
-        """
+        """#Umweltsensor/Handzentrale Zeit — if ($msg =~ m/0F..1020/) { ... }"""
         f = DuoFernDecoder._ensure_bytes(data)
-        return f[0] == 0x0F and f[2] == 0x10 and f[3] == 0x20
+        return f[0]==0x0F and f[2]==0x10 and f[3]==0x20
 
     @staticmethod
     def is_weather_config(data: bytes | bytearray | str) -> bool:
-        """Weather sensor config register response.
-
-        From 30_DUOFERN.pm:
-          #Umweltsensor Konfiguration
-          if ($msg =~ m/0FFF1B2[1-8]/) { ... }
-        """
+        """#Umweltsensor Konfiguration — if ($msg =~ m/0FFF1B2[1-8]/) { ... }"""
         f = DuoFernDecoder._ensure_bytes(data)
-        return f[0] == 0x0F and f[1] == 0xFF and f[2] == 0x1B and 0x21 <= f[3] <= 0x28
+        return f[0]==0x0F and f[1]==0xFF and f[2]==0x1B and 0x21<=f[3]<=0x28
 
     @staticmethod
     def is_battery_status(data: bytes | bytearray | str) -> bool:
-        """Battery status message from sensors.
-
-        From 30_DUOFERN.pm:
-          #Sensoren Batterie
-          if ($msg =~ m/0FFF1323/) { ... }
-        """
+        """#Sensoren Batterie — if ($msg =~ m/0FFF1323/) { ... }"""
         f = DuoFernDecoder._ensure_bytes(data)
-        return f[0] == 0x0F and f[1] == 0xFF and f[2] == 0x13 and f[3] == 0x23
+        return f[0]==0x0F and f[1]==0xFF and f[2]==0x13 and f[3]==0x23
 
     @staticmethod
     def is_cmd_ack(data: bytes | bytearray | str) -> bool:
-        """Command acknowledged by actor.
-
-        From 30_DUOFERN.pm:
-          #ACK, Befehl vom Aktor empfangen
-          if ($msg =~ m/^810003CC/) { ... }
-        After this, FHEM sends up to STATUS_RETRY_COUNT status requests.
-        """
+        """#ACK, Befehl vom Aktor empfangen — if ($msg =~ m/^810003CC/) { ... }"""
         f = DuoFernDecoder._ensure_bytes(data)
-        return f[0] == 0x81 and f[1] == 0x00 and f[2] == 0x03 and f[3] == 0xCC
+        return f[0]==0x81 and f[1]==0x00 and f[2]==0x03 and f[3]==0xCC
 
     @staticmethod
     def is_missing_ack(data: bytes | bytearray | str) -> bool:
-        """Actor did not receive the command (NACK).
-
-        From 30_DUOFERN.pm:
-          #NACK, Befehl nicht vom Aktor empfangen
-          if ($msg =~ m/^810108AA/) { ... }
-        """
+        """#NACK, Befehl nicht vom Aktor empfangen — if ($msg =~ m/^810108AA/) { ... }"""
         f = DuoFernDecoder._ensure_bytes(data)
-        return f[0] == 0x81 and f[1] == 0x01 and f[2] == 0x08 and f[3] == 0xAA
+        return f[0]==0x81 and f[1]==0x01 and f[2]==0x08 and f[3]==0xAA
 
     @staticmethod
     def is_not_initialized(data: bytes | bytearray | str) -> bool:
-        """Actor not initialized — stick must reopen serial port.
-
-        From 30_DUOFERN.pm:
-          #NACK, Aktor nicht initialisiert
-          if ($msg =~ m/^81010C55/) { ... }
-        From 10_DUOFERNSTICK.pm: triggers DevIo_OpenDev (reopen).
-        """
+        """#NACK, Aktor nicht initialisiert — if ($msg =~ m/^81010C55/) { ... }"""
         f = DuoFernDecoder._ensure_bytes(data)
-        return f[0] == 0x81 and f[1] == 0x01 and f[2] == 0x0C and f[3] == 0x55
+        return f[0]==0x81 and f[1]==0x01 and f[2]==0x0C and f[3]==0x55
 
     @staticmethod
     def is_broadcast_ack(data: bytes | bytearray | str) -> bool:
-        """Broadcast status ack — can be ignored.
-
-        Pattern: 0FFF11...
-        """
+        """Broadcast status ack (0FFF11...) — silently ignored."""
         f = DuoFernDecoder._ensure_bytes(data)
-        return f[0] == 0x0F and f[1] == 0xFF and f[2] == 0x11
+        return f[0]==0x0F and f[1]==0xFF and f[2]==0x11
 
     @staticmethod
     def should_dispatch(data: bytes | bytearray | str) -> bool:
         """True if this frame should be dispatched to device handlers.
 
         From 10_DUOFERNSTICK.pm DUOFERNSTICK_Parse:
-          ACKs (81...) are consumed by the write-queue handler, not dispatched.
-          Broadcast status ack (0FFF11...) is silently ignored.
-          Everything else is dispatched to DUOFERN_Parse.
+          ACKs (81...) consumed by write-queue, not dispatched.
+          Broadcast status ack (0FFF11...) silently ignored.
         """
         f = DuoFernDecoder._ensure_bytes(data)
-        if f[0] == 0x81:
+        if f[0]==0x81:
             return False
-        if f[0] == 0x0F and f[1] == 0xFF and f[2] == 0x11:
+        if f[0]==0x0F and f[1]==0xFF and f[2]==0x11:
             return False
         return True
 
@@ -815,20 +690,20 @@ class DuoFernDecoder:
 
     @staticmethod
     def extract_device_code(data: bytes | bytearray | str) -> DuoFernId:
-        """Extract the 3-byte device code from a frame.
+        """Extract device code from a frame.
 
         From DUOFERN_Parse in 30_DUOFERN.pm:
-          $code = substr($msg, 30, 6)   => bytes 15-17 (normal messages)
-          $code = substr($msg, 36, 6)   => bytes 18-20 (ACK messages 81...)
+          $code = substr($msg, 30, 6) => bytes 15-17 (normal)
+          $code = substr($msg, 36, 6) => bytes 18-20 (ACK 81...)
         """
         f = DuoFernDecoder._ensure_bytes(data)
-        if f[0] == MessageType.ACK:
+        if f[0]==MessageType.ACK:
             return DuoFernId(raw=bytes(f[18:21]))
         return DuoFernId(raw=bytes(f[15:18]))
 
     @staticmethod
     def extract_device_code_from_status(data: bytes | bytearray | str) -> DuoFernId:
-        """Extract device code from a status message (always bytes 15-17)."""
+        """Extract device code from status message (always bytes 15-17)."""
         f = DuoFernDecoder._ensure_bytes(data)
         return DuoFernId(raw=bytes(f[15:18]))
 
@@ -836,13 +711,11 @@ class DuoFernDecoder:
 
     @staticmethod
     def _read_word(frame: bytearray, pos: int) -> int:
-        """Read a 16-bit big-endian word from payload position N.
+        """Read 16-bit word from payload position N.
 
         From 30_DUOFERN.pm:
           $value = hex(substr($msg, 6 + $stPos*2, 4))
-          hex offset 6 = byte 3 of the frame.
-          So "position 0" in %statusIds = frame byte 3+4,
-             "position 7" = frame byte 10+11.
+          hex offset 6 = byte 3 of frame.
         """
         byte_offset = 3 + pos
         if byte_offset + 1 >= FRAME_SIZE_BYTES:
@@ -851,7 +724,7 @@ class DuoFernDecoder:
 
     @staticmethod
     def _extract_bits(word: int, from_bit: int, to_bit: int) -> int:
-        """Extract bits from_bit..to_bit (inclusive) from a 16-bit word.
+        """Extract bits from_bit..to_bit (inclusive).
 
         From 30_DUOFERN.pm:
           my $stLen = $stTo - $stFrom + 1;
@@ -862,73 +735,38 @@ class DuoFernDecoder:
 
     @staticmethod
     def _apply_mapping(raw: int, map_key: str) -> object:
-        """Apply a %statusMapping transform to a raw integer value.
+        """Apply %statusMapping transform.
 
-        From 30_DUOFERN.pm:
-          if ($statusIds{$statusId}{map} =~ m/scaleF.*/) {
-            $value = sprintf("%0.1f", ($value - $mapping[1]) / $mapping[0]);
-          } elsif ($statusIds{$statusId}{map} =~ m/scale.*/) {
-            $value = ($value - $mapping[1]) / $mapping[0];
-          } elsif ($statusIds{$statusId}{map} =~ m/hex/) {
-            $value = sprintf("%02x", $value);
-            $value = substr($value,0,1).".".substr($value,1,1);
-          } else {
-            $value = $mapping[$value];  # string list index
-          }
-        Returns int, float, or str depending on the map type.
+        From 30_DUOFERN.pm mapping logic for scaleF, scale, hex, string lists.
         """
         if map_key not in STATUS_MAPPING:
             return raw
-
         mapping = STATUS_MAPPING[map_key]
-
-        if map_key in ("onOff", "upDown", "moving", "motor", "closeT", "openS"):
-            # Index into string list
+        if map_key in ("onOff","upDown","moving","motor","closeT","openS"):
             idx = int(raw)
-            if 0 <= idx < len(mapping):
-                return mapping[idx]
-            return str(raw)
-
+            return mapping[idx] if 0<=idx<len(mapping) else str(raw)
         if map_key == "hex":
-            # Rendered as "X.Y" nibble string
             val = int(raw)
-            return f"{(val >> 4) & 0x0F}.{val & 0x0F}"
-
-        # scale* variants: [factor, offset] -> (raw - offset) / factor
+            return f"{(val>>4)&0x0F}.{val&0x0F}"
         factor, offset = mapping[0], mapping[1]
         if map_key == "scale10":
             return (raw - offset) / factor
-        # scaleF1–scaleF4: float with 1 decimal place
         return round((raw - offset) / factor, 1)
 
     @staticmethod
     def _determine_format(frame: bytearray, device_code: DuoFernId) -> str:
-        """Determine the status format string for a device.
+        """Determine status format string.
 
-        From 30_DUOFERN.pm %devices "format" key and frame byte 3:
-          Priority:
-            1. Per-device-type override (DEVICE_STATUS_FORMAT_OVERRIDE)
-               e.g. 0x47 (Rohrmotor Steuerung) always uses "23a"
-            2. Format encoded in frame byte 3 as hex value
-            3. Fall back to STATUS_FORMAT_DEFAULT ("21")
+        Priority:
+          1. Per-device-type override (DEVICE_STATUS_FORMAT_OVERRIDE)
+          2. Format encoded in frame byte 3
+          3. STATUS_FORMAT_DEFAULT ("21")
         """
-        device_type = device_code.device_type
-
-        if device_type in DEVICE_STATUS_FORMAT_OVERRIDE:
-            return DEVICE_STATUS_FORMAT_OVERRIDE[device_type]
-
-        # Frame byte 3 encodes the format
-        fmt_byte = frame[3]
-        fmt_str = format(fmt_byte, "02X").lstrip("0") or "0"
-
+        if device_code.device_type in DEVICE_STATUS_FORMAT_OVERRIDE:
+            return DEVICE_STATUS_FORMAT_OVERRIDE[device_code.device_type]
+        fmt_str = format(frame[3], "02X").lstrip("0") or "0"
         if fmt_str in STATUS_GROUPS:
             return fmt_str
-
-        _LOGGER.debug(
-            "Unknown status format 0x%02X for device %s, using default",
-            fmt_byte,
-            device_code.hex,
-        )
         return STATUS_FORMAT_DEFAULT
 
     @staticmethod
@@ -936,40 +774,27 @@ class DuoFernDecoder:
         data: bytes | bytearray | str,
         channel: str = "01",
     ) -> ParsedStatus:
-        """Parse a status response frame (0FFF0F...) into a ParsedStatus.
+        """Parse a status response frame into ParsedStatus.
 
-        Implements the full %statusGroups / %statusIds / %statusMapping
+        Full implementation of the %statusGroups / %statusIds / %statusMapping
         parsing loop from DUOFERN_Parse in 30_DUOFERN.pm.
 
-        Position handling:
-          - The "invert" key in %statusIds is applied unconditionally here
-            (same as FHEM with positionInverse=1, which is the HA-friendly
-            convention used by the existing HA addon).
-          - Result: position 0 = open, 100 = closed (DuoFern native after
-            the %statusIds invert=100 has been applied).
-          - cover.py then does ha_pos = 100 - position to match HA convention
-            (0=closed, 100=open), exactly as the existing addon did.
+        Position/invert handling:
+          invert is applied unconditionally (always positionInverse=1 behaviour).
+          Result: 0=open, 100=closed (DuoFern native).
+          cover.py then does ha_pos = 100 - position (HA convention).
 
-        From 30_DUOFERN.pm status parsing:
-          if (exists $statusIds{$statusId}{invert}) {
+        From 30_DUOFERN.pm:
+          if((exists $statusIds{$statusId}{invert}) && ($positionInverse eq "1")) {
             $value = $statusIds{$statusId}{invert} - $value;
           }
-          # Note: FHEM only applies this when positionInverse="1".
-          # We always apply it to match HA convention (existing addon behaviour).
 
-        blindsMode cleanup from 30_DUOFERN.pm:
+        blindsMode cleanup:
           if (defined($statusValue{blindsMode}) && ($statusValue{blindsMode} eq "off")) {
             foreach my $reading (@readingsBlindMode) { delete ... }
           }
 
-        Heizkörperantrieb (0xE1) special handling (format "29"):
-          #Heizkörperantrieb
-          Bidirectional protocol: on status receipt, pending set-values are
-          encoded back into the response frame. Handled in coordinator.py.
-
-        Args:
-            data:    22-byte frame or 44-char hex string
-            channel: "01" or "02" for multi-channel devices
+        #Heizkörperantrieb (0xE1) bidirectional protocol handled in coordinator.py.
         """
         frame = DuoFernDecoder._ensure_bytes(data)
         result = ParsedStatus()
@@ -983,37 +808,27 @@ class DuoFernDecoder:
 
         # Firmware version at byte 12: high nibble = major, low nibble = minor
         ver_byte = frame[12]
-        result.version = f"{(ver_byte >> 4) & 0x0F}.{ver_byte & 0x0F}"
+        result.version = f"{(ver_byte>>4)&0x0F}.{ver_byte&0x0F}"
 
         fmt = DuoFernDecoder._determine_format(frame, device_code)
-        status_ids = STATUS_GROUPS.get(fmt, [])
-
         readings: dict[str, object] = {}
 
-        for sid in status_ids:
+        for sid in STATUS_GROUPS.get(fmt, []):
             spec = STATUS_IDS.get(sid)
             if spec is None:
                 continue
-
-            chan_spec = spec["chan"].get(channel)
-            if chan_spec is None:
-                # Single-channel device — fall back to "01"
-                chan_spec = spec["chan"].get("01")
+            chan_spec = spec["chan"].get(channel) or spec["chan"].get("01")
             if chan_spec is None:
                 continue
 
             word = DuoFernDecoder._read_word(frame, chan_spec["position"])
             raw = DuoFernDecoder._extract_bits(word, chan_spec["from"], chan_spec["to"])
-
             name: str = spec["name"]
-            value: object
 
             if "invert" in spec:
-                # Apply inversion unconditionally (positionInverse always on).
-                # From %statusIds: "invert" => 100 means value = 100 - raw.
-                # Result: 0 = open, 100 = closed (DuoFern native convention).
+                # Apply inversion unconditionally — matches HA convention.
                 raw = spec["invert"] - raw
-                value = raw
+                value: object = raw
             elif "map" in spec:
                 value = DuoFernDecoder._apply_mapping(raw, spec["map"])
             else:
@@ -1021,36 +836,30 @@ class DuoFernDecoder:
 
             readings[name] = value
 
-        # blindsMode cleanup: remove slat readings when blinds mode is off.
-        # From 30_DUOFERN.pm @readingsBlindMode
+        # blindsMode cleanup from @readingsBlindMode
         if readings.get("blindsMode") == "off":
             for key in BLIND_MODE_READINGS:
                 readings.pop(key, None)
 
         result.readings = readings
 
-        # Derive high-level convenience fields from readings
         if "position" in readings:
             try:
                 result.position = int(readings["position"])  # type: ignore[arg-type]
             except (TypeError, ValueError):
                 pass
-
         if "level" in readings:
             try:
                 result.level = int(readings["level"])  # type: ignore[arg-type]
             except (TypeError, ValueError):
                 pass
-
         if "moving" in readings:
             result.moving = str(readings["moving"])
-
         if "measured-temp" in readings:
             try:
                 result.measured_temp = float(readings["measured-temp"])  # type: ignore[arg-type]
             except (TypeError, ValueError):
                 pass
-
         if "desired-temp" in readings:
             try:
                 result.desired_temp = float(readings["desired-temp"])  # type: ignore[arg-type]
@@ -1060,24 +869,13 @@ class DuoFernDecoder:
         return result
 
     @staticmethod
-    def parse_sensor_event(
-        data: bytes | bytearray | str,
-    ) -> SensorEvent | None:
-        """Parse a sensor / button event message.
+    def parse_sensor_event(data: bytes | bytearray | str) -> SensorEvent | None:
+        """Parse sensor/button event message.
 
         From 30_DUOFERN.pm:
           #Wandtaster, Funksender UP, Handsender, Sensoren
-          Dispatches on msg_id = substr($msg, 4, 4) against %sensorMsg.
-
-        Channel handling from FHEM:
-          chan=6: channel byte is frame[6], used directly as hex string.
-          chan=5: channel byte may be a bitmask for multi-channel sensors.
-          Devices 0x61 / 0x70 / 0x71 always report on channel "01".
-
-        Returns SensorEvent or None if the message ID is not in %sensorMsg.
         """
         frame = DuoFernDecoder._ensure_bytes(data)
-
         msg_id = frame[2:4].hex().upper()
         spec = SENSOR_MESSAGES.get(msg_id)
         if spec is None:
@@ -1085,16 +883,10 @@ class DuoFernDecoder:
 
         device_code = DuoFernDecoder.extract_device_code(frame)
         chan_pos: int = spec["chan"]
-
-        if chan_pos < FRAME_SIZE_BYTES:
-            chan_raw = frame[chan_pos]
-        else:
-            chan_raw = 0
-
+        chan_raw = frame[chan_pos] if chan_pos < FRAME_SIZE_BYTES else 0
         chan_hex = f"{chan_raw:02X}"
 
         # Devices 0x61, 0x70, 0x71 always use channel "01"
-        # (from FHEM device dispatch logic)
         if device_code.device_type in (0x61, 0x70, 0x71):
             chan_hex = "01"
 
@@ -1108,63 +900,47 @@ class DuoFernDecoder:
 
     @staticmethod
     def parse_weather_data(data: bytes | bytearray | str) -> WeatherData:
-        """Parse Umweltsensor weather data frame (0F..1322...).
+        """Parse Umweltsensor weather data (0F..1322...).
 
-        From 30_DUOFERN.pm:
-          #Umweltsensor Wetter
+        From 30_DUOFERN.pm: #Umweltsensor Wetter
         """
         frame = DuoFernDecoder._ensure_bytes(data)
         w = WeatherData()
-
-        brightness_raw = (frame[4] << 8) | frame[5]
+        brightness_raw = (frame[4]<<8)|frame[5]
         brightness_exp = 1000 if (brightness_raw & 0x0400) else 1
         w.brightness = float((brightness_raw & 0x01FF) * brightness_exp)
-
         w.sun_direction = frame[7] * 1.5
         w.sun_height = float(frame[8] - 90)
-
-        temp_raw = (frame[9] << 8) | frame[10]
+        temp_raw = (frame[9]<<8)|frame[10]
         w.temperature = ((temp_raw & 0x7FFF) - 400) / 10.0
         w.is_raining = bool(temp_raw & 0x8000)
-
-        wind_raw = (frame[11] << 8) | frame[12]
+        wind_raw = (frame[11]<<8)|frame[12]
         w.wind = (wind_raw & 0x03FF) / 10.0
-
         return w
 
     @staticmethod
     def parse_battery_status(data: bytes | bytearray | str) -> dict[str, object]:
-        """Parse battery status message (0FFF1323...).
+        """Parse battery status (0FFF1323...).
 
-        From 30_DUOFERN.pm:
-          #Sensoren Batterie
-        Returns dict with 'batteryState' ("ok"|"low") and 'batteryPercent' (int).
+        From 30_DUOFERN.pm: #Sensoren Batterie
         """
         frame = DuoFernDecoder._ensure_bytes(data)
         level = frame[4]
-        return {
-            "batteryState": "low" if level <= 10 else "ok",
-            "batteryPercent": level,
-        }
+        return {"batteryState": "low" if level<=10 else "ok", "batteryPercent": level}
 
 
 # ---------------------------------------------------------------------------
 # Utility functions
 # ---------------------------------------------------------------------------
 
-
 def frame_to_hex(frame: bytearray) -> str:
-    """Convert a frame bytearray to uppercase hex string."""
     return frame.hex().upper()
 
-
 def hex_to_frame(hex_str: str) -> bytearray:
-    """Convert a hex string to a frame bytearray."""
     return bytearray.fromhex(hex_str)
 
-
 def validate_system_code(code: str) -> bool:
-    """Validate a system code: 6 hex chars starting with '6F'.
+    """Validate system code: 6 hex chars starting with '6F'.
 
     From 10_DUOFERNSTICK.pm: dongle serial starts with "6F".
     """
@@ -1176,9 +952,7 @@ def validate_system_code(code: str) -> bool:
         return False
     return code.upper().startswith("6F")
 
-
 def validate_device_code(code: str) -> bool:
-    """Validate a device code: exactly 6 hex chars."""
     if len(code) != 6:
         return False
     try:

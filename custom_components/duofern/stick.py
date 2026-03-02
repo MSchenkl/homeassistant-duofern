@@ -104,17 +104,16 @@ class DuoFernStick:
 
         loop = asyncio.get_running_loop()
 
-        (
-            self._transport,
-            self._serial_protocol,
-        ) = await serial_asyncio_fast.create_serial_connection(
-            loop,
-            lambda: DuoFernSerialProtocol(self._on_frame_received),
-            self._port,
-            baudrate=SERIAL_BAUDRATE,
-            bytesize=serial_asyncio_fast.serial.EIGHTBITS,
-            parity=serial_asyncio_fast.serial.PARITY_NONE,
-            stopbits=serial_asyncio_fast.serial.STOPBITS_ONE,
+        self._transport, self._serial_protocol = (
+            await serial_asyncio_fast.create_serial_connection(
+                loop,
+                lambda: DuoFernSerialProtocol(self._on_frame_received),
+                self._port,
+                baudrate=SERIAL_BAUDRATE,
+                bytesize=serial_asyncio_fast.serial.EIGHTBITS,
+                parity=serial_asyncio_fast.serial.PARITY_NONE,
+                stopbits=serial_asyncio_fast.serial.STOPBITS_ONE,
+            )
         )
 
         self._connected = True
@@ -224,8 +223,7 @@ class DuoFernStick:
                     if resp is None:
                         _LOGGER.warning(
                             "Failed to register device %s at slot %d",
-                            device.hex,
-                            idx,
+                            device.hex, idx,
                         )
                         continue
                     self._write_frame(DuoFernEncoder.build_ack())
@@ -245,11 +243,15 @@ class DuoFernStick:
                 self._write_frame(DuoFernEncoder.build_ack())
 
                 self._initialized = True
-                _LOGGER.info("DuoFern stick init complete (attempt %d)", attempt + 1)
+                _LOGGER.info(
+                    "DuoFern stick init complete (attempt %d)", attempt + 1
+                )
                 return
 
             except TimeoutError:
-                _LOGGER.warning("Init attempt %d timed out, retrying...", attempt + 1)
+                _LOGGER.warning(
+                    "Init attempt %d timed out, retrying...", attempt + 1
+                )
                 continue
 
         raise ConnectionError(
@@ -281,7 +283,9 @@ class DuoFernStick:
         try:
             return await asyncio.wait_for(response_future, timeout=timeout)
         except asyncio.TimeoutError:
-            _LOGGER.warning("Timeout waiting for response to %s", frame_to_hex(frame))
+            _LOGGER.warning(
+                "Timeout waiting for response to %s", frame_to_hex(frame)
+            )
             return None
         finally:
             self._serial_protocol.set_init_response_future(None)
@@ -434,7 +438,8 @@ class DuoFernSerialProtocol(asyncio.Protocol):
             del self._buffer[:FRAME_SIZE_BYTES]
 
             # During init: deliver to the waiting future
-            if self._init_response_future and not self._init_response_future.done():
+            if (self._init_response_future
+                    and not self._init_response_future.done()):
                 self._init_response_future.set_result(frame)
             else:
                 # Normal operation: deliver via frame callback

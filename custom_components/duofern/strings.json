@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Rademacher DuoFern USB-Stick",
+        "title": "Rademacher DuoFern USB Stick",
         "description": "Configure the connection to your DuoFern USB stick.",
         "data": {
           "serial_port": "Serial Port",
@@ -59,6 +59,62 @@
       },
       "request_status": {
         "name": "Status Broadcast"
+      },
+      "cover_dusk": {
+        "name": "Dusk position"
+      },
+      "cover_dawn": {
+        "name": "Dawn position"
+      },
+      "cover_toggle": {
+        "name": "Toggle"
+      },
+      "reset_settings": {
+        "name": "Reset Settings"
+      },
+      "reset_full": {
+        "name": "Factory Reset"
+      },
+      "remote_pair": {
+        "name": "Remote Pair"
+      },
+      "remote_unpair": {
+        "name": "Remote Unpair"
+      },
+      "temp_up": {
+        "name": "Temp Up"
+      },
+      "temp_down": {
+        "name": "Temp Down"
+      },
+      "get_status": {
+        "name": "Request Status"
+      },
+      "get_weather": {
+        "name": "Get Weather"
+      },
+      "get_time": {
+        "name": "Get Time"
+      },
+      "get_config": {
+        "name": "Get Config"
+      },
+      "set_time": {
+        "name": "Sync Time"
+      },
+      "write_config": {
+        "name": "Write Config"
+      }
+    },
+    "binary_sensor": {
+      "sx5_obstacle": {
+        "name": "Obstacle"
+      },
+      "sx5_block": {
+        "name": "Block"
+      },
+      "sx5_light_curtain": {
+        "name": "Light Curtain"
       }
     }
   }

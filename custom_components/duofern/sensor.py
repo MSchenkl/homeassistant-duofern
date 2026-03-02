@@ -61,7 +61,6 @@ _LOGGER = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class DuoFernSensorDescription(SensorEntityDescription):
     """Extends SensorEntityDescription with the reading key."""
-
     reading_key: str = ""
 
 
@@ -137,8 +136,7 @@ async def async_setup_entry(
             )
             _LOGGER.debug(
                 "Adding sensor entity %s for device %s",
-                description.key,
-                hex_code,
+                description.key, hex_code,
             )
 
     if entities:
