@@ -279,9 +279,7 @@ condition:
 
 ## CLI Tools
 
-The `tools/` directory contains standalone scripts for testing without Home Assistant.
-
-> **Note:** The HA integration must be stopped while using CLI tools — only one process can hold the serial port at a time.
+The `tools/` directory contains standalone Python scripts for testing and device management without Home Assistant.
 
 ### Requirements
 
@@ -289,28 +287,42 @@ The `tools/` directory contains standalone scripts for testing without Home Assi
 pip install pyserial pyserial-asyncio-fast
 ```
 
-### test_duofern.py — Control & Status
+> **HAOS (Home Assistant OS) Note:** On HAOS the system Python is externally managed. You need to run:
+> ```bash
+> apk add py3-pip
+> pip install --break-system-packages pyserial-asyncio-fast
+> ```
+> This is only needed for the CLI tools. The integration itself installs dependencies automatically via `manifest.json`.
+
+### test_duofern.py — Test Script
+
+Control roller shutters directly from the command line:
 
 ```bash
-python3 tools/test_duofern.py 4053B8 up            # Open shutter
-python3 tools/test_duofern.py 4053B8 down           # Close shutter
-python3 tools/test_duofern.py 4053B8 stop           # Stop movement
-python3 tools/test_duofern.py 4053B8 position 50    # Set to 50%
-python3 tools/test_duofern.py 4053B8 dusk           # Move to dusk position
-python3 tools/test_duofern.py 4053B8 dawn           # Move to dawn position
-python3 tools/test_duofern.py 4053B8 status -v      # Query status (verbose)
-python3 tools/test_duofern.py 4053B8 statusall -v   # Query all devices
+python3 tools/test_duofern.py 4053B8 up           # Open one shutter
+python3 tools/test_duofern.py 4053B8 down          # Close one shutter
+python3 tools/test_duofern.py 4053B8 stop          # Stop one shutter
+python3 tools/test_duofern.py 4053B8 position 50   # Set one to 50%
+python3 tools/test_duofern.py 4053B8 status        # Status of one device
+python3 tools/test_duofern.py up                   # Open ALL shutters
+python3 tools/test_duofern.py down                 # Close ALL shutters
+python3 tools/test_duofern.py position 50          # Set ALL to 50%
+python3 tools/test_duofern.py status               # Status of ALL devices
+python3 tools/test_duofern.py statusall            # Broadcast status request
 ```
 
-### pair_duofern.py — Pairing
+### pair_duofern.py — Pairing Tool
+
+Pair and unpair DuoFern devices without FHEM:
 
 ```bash
-python3 tools/pair_duofern.py pair                  # Start pairing (60s window)
-python3 tools/pair_duofern.py unpair                # Start unpairing
-python3 tools/pair_duofern.py list                  # List all devices with status
-python3 tools/pair_duofern.py pair --timeout 120 -v # Extended timeout + debug
+python3 tools/pair_duofern.py pair              # Start pairing (60s window)
+python3 tools/pair_duofern.py unpair            # Start unpairing
+python3 tools/pair_duofern.py list              # List all devices with status
+python3 tools/pair_duofern.py pair --timeout 120 -v  # Extended timeout + debug
 ```
 
+**Important:** The HA integration must be disabled while using CLI tools, as only one process can access the serial port at a time.
 ---
 
 ## Protocol
