@@ -20,8 +20,8 @@ DOMAIN: Final = "duofern"
 # USB device identification (FTDI FT232R used by Rademacher)
 # ---------------------------------------------------------------------------
 
-USB_VID: Final = 0x0403       # Future Technology Devices International (FTDI)
-USB_PID: Final = 0x6001       # FT232 Serial (UART) IC
+USB_VID: Final = 0x0403  # Future Technology Devices International (FTDI)
+USB_PID: Final = 0x6001  # FT232 Serial (UART) IC
 USB_PRODUCT: Final = "DuoFern USB-Stick"
 USB_MANUFACTURER: Final = "Rademacher"
 
@@ -35,7 +35,7 @@ SERIAL_BAUDRATE: Final = 115200
 # DuoFern protocol frame format
 # ---------------------------------------------------------------------------
 
-FRAME_SIZE_HEX: Final = 44    # 22 bytes = 44 hex characters
+FRAME_SIZE_HEX: Final = 44  # 22 bytes = 44 hex characters
 FRAME_SIZE_BYTES: Final = 22
 
 # Dongle serial format: must start with "6F" + 4 hex digits
@@ -49,7 +49,7 @@ ACK_TIMEOUT: Final = 5.0
 INIT_RETRY_COUNT: Final = 4
 PAIR_TIMEOUT: Final = 60.0
 STATUS_TIMEOUT: Final = 30.0
-STATUS_RETRY_COUNT: Final = 4    # retries after ACK 810003CC (from FHEM)
+STATUS_RETRY_COUNT: Final = 4  # retries after ACK 810003CC (from FHEM)
 FLUSH_BUFFER_TIMEOUT: Final = 0.5
 
 # ---------------------------------------------------------------------------
@@ -192,10 +192,10 @@ REMOTE_DEVICE_TYPES: Final[set[int]] = {
 # ---------------------------------------------------------------------------
 
 DEVICE_CHANNELS: Final[dict[int, list[str]]] = {
-    0x43: ["01", "02"],   # Universalaktor:   channel 01 and 02
-    0x65: ["01"],         # Bewegungsmelder:  channel 01
-    0x69: ["01"],         # Umweltsensor:     channel 01 (actor sub-device)
-    0x74: ["01"],         # Wandtaster 6fach: channel 01
+    0x43: ["01", "02"],  # Universalaktor:   channel 01 and 02
+    0x65: ["01"],  # Bewegungsmelder:  channel 01
+    0x69: ["01"],  # Umweltsensor:     channel 01 (actor sub-device)
+    0x74: ["01"],  # Wandtaster 6fach: channel 01
 }
 
 # ---------------------------------------------------------------------------
@@ -205,9 +205,9 @@ DEVICE_CHANNELS: Final[dict[int, list[str]]] = {
 # ---------------------------------------------------------------------------
 
 DEVICE_STATUS_FORMAT_OVERRIDE: Final[dict[int, str]] = {
-    0x47: "23a",   # Rohrmotor Steuerung
-    0x69: "23a",   # Umweltsensor
-    0x4E: "24a",   # SX5
+    0x47: "23a",  # Rohrmotor Steuerung
+    0x69: "23a",  # Umweltsensor
+    0x4E: "24a",  # SX5
 }
 
 # ---------------------------------------------------------------------------
@@ -216,24 +216,105 @@ DEVICE_STATUS_FORMAT_OVERRIDE: Final[dict[int, str]] = {
 # ---------------------------------------------------------------------------
 
 STATUS_GROUPS: Final[dict[str, list[int]]] = {
-    "21":  [100, 101, 102, 104, 105, 106, 111, 112, 113, 114, 50],
-    "22":  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    "23":  [102, 107, 109, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124,
-            125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136,
-            140, 141, 50],
-    "23a": [102, 107, 109, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124,
-            125, 126, 127, 133, 140, 141, 50],
-    "24":  [102, 107, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
-            126, 127, 140, 141, 400, 402, 50],
-    "24a": [102, 107, 115, 123, 124, 400, 402, 404, 405, 406, 407, 408, 409,
-            410, 411, 50],
-    "25":  [300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312,
-            313],
-    "26":  [],
-    "27":  [160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171],
-    "29":  [180, 181, 182, 183, 184, 185, 186, 187, 998],
-    "2B":  [300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312,
-            313],
+    "21": [100, 101, 102, 104, 105, 106, 111, 112, 113, 114, 50],
+    "22": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "23": [
+        102,
+        107,
+        109,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        140,
+        141,
+        50,
+    ],
+    "23a": [
+        102,
+        107,
+        109,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        133,
+        140,
+        141,
+        50,
+    ],
+    "24": [
+        102,
+        107,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        140,
+        141,
+        400,
+        402,
+        50,
+    ],
+    "24a": [
+        102,
+        107,
+        115,
+        123,
+        124,
+        400,
+        402,
+        404,
+        405,
+        406,
+        407,
+        408,
+        409,
+        410,
+        411,
+        50,
+    ],
+    "25": [300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313],
+    "26": [],
+    "27": [160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171],
+    "29": [180, 181, 182, 183, 184, 185, 186, 187, 998],
+    "2B": [300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313],
 }
 
 # ---------------------------------------------------------------------------
@@ -250,18 +331,18 @@ STATUS_GROUPS: Final[dict[str, list[int]]] = {
 # ---------------------------------------------------------------------------
 
 STATUS_MAPPING: Final[dict[str, list]] = {
-    "onOff":   ["off", "on"],
-    "upDown":  ["up", "down"],
-    "moving":  ["stop", "stop"],
-    "motor":   ["off", "short(160ms)", "long(480ms)", "individual"],
-    "closeT":  ["off", "30", "60", "90", "120", "150", "180", "210", "240"],
-    "openS":   ["error", "11", "15", "19"],
-    "scale10": [10, 0],      # factor=10, offset=0
-    "scaleF1": [2, 80],      # factor=2,  offset=80  -> temp °C (raw/2 - 40)
-    "scaleF2": [10, 400],    # factor=10, offset=400 -> temp °C (raw/10 - 40)
-    "scaleF3": [2, -8],      # factor=2,  offset=-8
-    "scaleF4": [100, 0],     # factor=100,offset=0
-    "hex":     [1, 0],       # displayed as hex nibbles "X.Y"
+    "onOff": ["off", "on"],
+    "upDown": ["up", "down"],
+    "moving": ["stop", "stop"],
+    "motor": ["off", "short(160ms)", "long(480ms)", "individual"],
+    "closeT": ["off", "30", "60", "90", "120", "150", "180", "210", "240"],
+    "openS": ["error", "11", "15", "19"],
+    "scale10": [10, 0],  # factor=10, offset=0
+    "scaleF1": [2, 80],  # factor=2,  offset=80  -> temp °C (raw/2 - 40)
+    "scaleF2": [10, 400],  # factor=10, offset=400 -> temp °C (raw/10 - 40)
+    "scaleF3": [2, -8],  # factor=2,  offset=-8
+    "scaleF4": [100, 0],  # factor=100,offset=0
+    "hex": [1, 0],  # displayed as hex nibbles "X.Y"
 }
 
 # ---------------------------------------------------------------------------
@@ -284,224 +365,468 @@ STATUS_MAPPING: Final[dict[str, list]] = {
 
 STATUS_IDS: Final[dict[int, dict]] = {
     # --- Format 22: Universalaktor / Steckdosenaktor (2-channel) ---
-    1:   {"name": "level",              "chan": {
-              "01": {"position": 7, "from": 0, "to": 6},
-              "02": {"position": 6, "from": 0, "to": 6}}},
-    2:   {"name": "timeAutomatic",      "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 0, "to": 0},
-              "02": {"position": 2, "from": 0, "to": 0}}},
-    3:   {"name": "duskAutomatic",      "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 1, "to": 1},
-              "02": {"position": 2, "from": 1, "to": 1}}},
-    4:   {"name": "dawnAutomatic",      "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 6, "to": 6},
-              "02": {"position": 2, "from": 6, "to": 6}}},
-    5:   {"name": "sunAutomatic",       "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 2, "to": 2},
-              "02": {"position": 2, "from": 2, "to": 2}}},
-    6:   {"name": "manualMode",         "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 5, "to": 5},
-              "02": {"position": 2, "from": 5, "to": 5}}},
-    7:   {"name": "modeChange",         "map": "onOff", "chan": {
-              "01": {"position": 7, "from": 7, "to": 7},
-              "02": {"position": 6, "from": 7, "to": 7}}},
-    8:   {"name": "sunMode",            "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 4, "to": 4},
-              "02": {"position": 2, "from": 4, "to": 4}}},
-    9:   {"name": "stairwellFunction",  "map": "onOff", "chan": {
-              "01": {"position": 4, "from": 7, "to": 7},
-              "02": {"position": 0, "from": 7, "to": 7}}},
-    10:  {"name": "stairwellTime",      "map": "scale10", "chan": {
-              "01": {"position": 5, "from": 0, "to": 14},
-              "02": {"position": 1, "from": 0, "to": 14}}},
-
+    1: {
+        "name": "level",
+        "chan": {
+            "01": {"position": 7, "from": 0, "to": 6},
+            "02": {"position": 6, "from": 0, "to": 6},
+        },
+    },
+    2: {
+        "name": "timeAutomatic",
+        "map": "onOff",
+        "chan": {
+            "01": {"position": 3, "from": 0, "to": 0},
+            "02": {"position": 2, "from": 0, "to": 0},
+        },
+    },
+    3: {
+        "name": "duskAutomatic",
+        "map": "onOff",
+        "chan": {
+            "01": {"position": 3, "from": 1, "to": 1},
+            "02": {"position": 2, "from": 1, "to": 1},
+        },
+    },
+    4: {
+        "name": "dawnAutomatic",
+        "map": "onOff",
+        "chan": {
+            "01": {"position": 3, "from": 6, "to": 6},
+            "02": {"position": 2, "from": 6, "to": 6},
+        },
+    },
+    5: {
+        "name": "sunAutomatic",
+        "map": "onOff",
+        "chan": {
+            "01": {"position": 3, "from": 2, "to": 2},
+            "02": {"position": 2, "from": 2, "to": 2},
+        },
+    },
+    6: {
+        "name": "manualMode",
+        "map": "onOff",
+        "chan": {
+            "01": {"position": 3, "from": 5, "to": 5},
+            "02": {"position": 2, "from": 5, "to": 5},
+        },
+    },
+    7: {
+        "name": "modeChange",
+        "map": "onOff",
+        "chan": {
+            "01": {"position": 7, "from": 7, "to": 7},
+            "02": {"position": 6, "from": 7, "to": 7},
+        },
+    },
+    8: {
+        "name": "sunMode",
+        "map": "onOff",
+        "chan": {
+            "01": {"position": 3, "from": 4, "to": 4},
+            "02": {"position": 2, "from": 4, "to": 4},
+        },
+    },
+    9: {
+        "name": "stairwellFunction",
+        "map": "onOff",
+        "chan": {
+            "01": {"position": 4, "from": 7, "to": 7},
+            "02": {"position": 0, "from": 7, "to": 7},
+        },
+    },
+    10: {
+        "name": "stairwellTime",
+        "map": "scale10",
+        "chan": {
+            "01": {"position": 5, "from": 0, "to": 14},
+            "02": {"position": 1, "from": 0, "to": 14},
+        },
+    },
     # --- Shared: moving indicator ---
-    50:  {"name": "moving",             "map": "moving", "chan": {
-              "01": {"position": 0, "from": 0, "to": 0},
-              "02": {"position": 0, "from": 0, "to": 0}}},
-
+    50: {
+        "name": "moving",
+        "map": "moving",
+        "chan": {
+            "01": {"position": 0, "from": 0, "to": 0},
+            "02": {"position": 0, "from": 0, "to": 0},
+        },
+    },
     # --- Format 21: RolloTron Standard / Comfort ---
-    100: {"name": "sunAutomatic",       "map": "onOff", "chan": {
-              "01": {"position": 0, "from": 2, "to": 2}}},
-    101: {"name": "timeAutomatic",      "map": "onOff", "chan": {
-              "01": {"position": 0, "from": 0, "to": 0}}},
-    102: {"name": "position",           "invert": 100, "chan": {
-              "01": {"position": 7, "from": 0, "to": 6}}},
-    104: {"name": "duskAutomatic",      "map": "onOff", "chan": {
-              "01": {"position": 0, "from": 3, "to": 3}}},
-    105: {"name": "dawnAutomatic",      "map": "onOff", "chan": {
-              "01": {"position": 1, "from": 3, "to": 3}}},
-    106: {"name": "manualMode",         "map": "onOff", "chan": {
-              "01": {"position": 0, "from": 7, "to": 7}}},
-    107: {"name": "manualMode",         "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 5, "to": 5}}},
-    109: {"name": "runningTime",        "chan": {
-              "01": {"position": 6, "from": 0, "to": 7}}},
-    111: {"name": "sunPosition",        "invert": 100, "chan": {
-              "01": {"position": 6, "from": 0, "to": 6}}},
-    112: {"name": "ventilatingPosition","invert": 100, "chan": {
-              "01": {"position": 2, "from": 0, "to": 6}}},
-    113: {"name": "ventilatingMode",    "map": "onOff", "chan": {
-              "01": {"position": 2, "from": 7, "to": 7}}},
-    114: {"name": "sunMode",            "map": "onOff", "chan": {
-              "01": {"position": 6, "from": 7, "to": 7}}},
-
+    100: {
+        "name": "sunAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 0, "from": 2, "to": 2}},
+    },
+    101: {
+        "name": "timeAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 0, "from": 0, "to": 0}},
+    },
+    102: {"name": "position", "chan": {"01": {"position": 7, "from": 0, "to": 6}}},
+    104: {
+        "name": "duskAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 0, "from": 3, "to": 3}},
+    },
+    105: {
+        "name": "dawnAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 1, "from": 3, "to": 3}},
+    },
+    106: {
+        "name": "manualMode",
+        "map": "onOff",
+        "chan": {"01": {"position": 0, "from": 7, "to": 7}},
+    },
+    107: {
+        "name": "manualMode",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 5, "to": 5}},
+    },
+    109: {"name": "runningTime", "chan": {"01": {"position": 6, "from": 0, "to": 7}}},
+    111: {"name": "sunPosition", "chan": {"01": {"position": 6, "from": 0, "to": 6}}},
+    112: {
+        "name": "ventilatingPosition",
+        "invert": 100,
+        "chan": {"01": {"position": 2, "from": 0, "to": 6}},
+    },
+    113: {
+        "name": "ventilatingMode",
+        "map": "onOff",
+        "chan": {"01": {"position": 2, "from": 7, "to": 7}},
+    },
+    114: {
+        "name": "sunMode",
+        "map": "onOff",
+        "chan": {"01": {"position": 6, "from": 7, "to": 7}},
+    },
     # --- Format 23 / 23a: Rohrmotor / Troll ---
-    115: {"name": "timeAutomatic",      "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 0, "to": 0}}},
-    116: {"name": "sunAutomatic",       "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 2, "to": 2}}},
-    117: {"name": "dawnAutomatic",      "map": "onOff", "chan": {
-              "01": {"position": 2, "from": 1, "to": 1}}},
-    118: {"name": "duskAutomatic",      "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 1, "to": 1}}},
-    119: {"name": "rainAutomatic",      "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 7, "to": 7}}},
-    120: {"name": "windAutomatic",      "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 6, "to": 6}}},
-    121: {"name": "sunPosition",        "invert": 100, "chan": {
-              "01": {"position": 5, "from": 0, "to": 6}}},
-    122: {"name": "sunMode",            "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 4, "to": 4}}},
-    123: {"name": "ventilatingPosition","invert": 100, "chan": {
-              "01": {"position": 4, "from": 0, "to": 6}}},
-    124: {"name": "ventilatingMode",    "map": "onOff", "chan": {
-              "01": {"position": 4, "from": 7, "to": 7}}},
-    125: {"name": "reversal",           "map": "onOff", "chan": {
-              "01": {"position": 7, "from": 7, "to": 7}}},
-    126: {"name": "rainDirection",      "map": "upDown", "chan": {
-              "01": {"position": 2, "from": 3, "to": 3}}},
-    127: {"name": "windDirection",      "map": "upDown", "chan": {
-              "01": {"position": 2, "from": 2, "to": 2}}},
-    128: {"name": "slatRunTime",        "chan": {
-              "01": {"position": 0, "from": 0, "to": 5}}},
-    129: {"name": "tiltAfterMoveLevel", "map": "onOff", "chan": {
-              "01": {"position": 0, "from": 6, "to": 6}}},
-    130: {"name": "tiltInVentPos",      "map": "onOff", "chan": {
-              "01": {"position": 0, "from": 7, "to": 7}}},
-    131: {"name": "defaultSlatPos",     "chan": {
-              "01": {"position": 1, "from": 0, "to": 6}}},
-    132: {"name": "tiltAfterStopDown",  "map": "onOff", "chan": {
-              "01": {"position": 1, "from": 7, "to": 7}}},
-    133: {"name": "motorDeadTime",      "map": "motor", "chan": {
-              "01": {"position": 2, "from": 4, "to": 5}}},
-    134: {"name": "tiltInSunPos",       "map": "onOff", "chan": {
-              "01": {"position": 5, "from": 7, "to": 7}}},
-    135: {"name": "slatPosition",       "chan": {
-              "01": {"position": 9, "from": 0, "to": 6}}},
-    136: {"name": "blindsMode",         "map": "onOff", "chan": {
-              "01": {"position": 9, "from": 7, "to": 7}}},
-    140: {"name": "windMode",           "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 3, "to": 3}}},
-    141: {"name": "rainMode",           "map": "onOff", "chan": {
-              "01": {"position": 2, "from": 0, "to": 0}}},
-
+    115: {
+        "name": "timeAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 0, "to": 0}},
+    },
+    116: {
+        "name": "sunAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 2, "to": 2}},
+    },
+    117: {
+        "name": "dawnAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 2, "from": 1, "to": 1}},
+    },
+    118: {
+        "name": "duskAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 1, "to": 1}},
+    },
+    119: {
+        "name": "rainAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 7, "to": 7}},
+    },
+    120: {
+        "name": "windAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 6, "to": 6}},
+    },
+    121: {
+        "name": "sunPosition",
+        "invert": 100,
+        "chan": {"01": {"position": 5, "from": 0, "to": 6}},
+    },
+    122: {
+        "name": "sunMode",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 4, "to": 4}},
+    },
+    123: {
+        "name": "ventilatingPosition",
+        "invert": 100,
+        "chan": {"01": {"position": 4, "from": 0, "to": 6}},
+    },
+    124: {
+        "name": "ventilatingMode",
+        "map": "onOff",
+        "chan": {"01": {"position": 4, "from": 7, "to": 7}},
+    },
+    125: {
+        "name": "reversal",
+        "map": "onOff",
+        "chan": {"01": {"position": 7, "from": 7, "to": 7}},
+    },
+    126: {
+        "name": "rainDirection",
+        "map": "upDown",
+        "chan": {"01": {"position": 2, "from": 3, "to": 3}},
+    },
+    127: {
+        "name": "windDirection",
+        "map": "upDown",
+        "chan": {"01": {"position": 2, "from": 2, "to": 2}},
+    },
+    128: {"name": "slatRunTime", "chan": {"01": {"position": 0, "from": 0, "to": 5}}},
+    129: {
+        "name": "tiltAfterMoveLevel",
+        "map": "onOff",
+        "chan": {"01": {"position": 0, "from": 6, "to": 6}},
+    },
+    130: {
+        "name": "tiltInVentPos",
+        "map": "onOff",
+        "chan": {"01": {"position": 0, "from": 7, "to": 7}},
+    },
+    131: {
+        "name": "defaultSlatPos",
+        "chan": {"01": {"position": 1, "from": 0, "to": 6}},
+    },
+    132: {
+        "name": "tiltAfterStopDown",
+        "map": "onOff",
+        "chan": {"01": {"position": 1, "from": 7, "to": 7}},
+    },
+    133: {
+        "name": "motorDeadTime",
+        "map": "motor",
+        "chan": {"01": {"position": 2, "from": 4, "to": 5}},
+    },
+    134: {
+        "name": "tiltInSunPos",
+        "map": "onOff",
+        "chan": {"01": {"position": 5, "from": 7, "to": 7}},
+    },
+    135: {"name": "slatPosition", "chan": {"01": {"position": 9, "from": 0, "to": 6}}},
+    136: {
+        "name": "blindsMode",
+        "map": "onOff",
+        "chan": {"01": {"position": 9, "from": 7, "to": 7}},
+    },
+    140: {
+        "name": "windMode",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 3, "to": 3}},
+    },
+    141: {
+        "name": "rainMode",
+        "map": "onOff",
+        "chan": {"01": {"position": 2, "from": 0, "to": 0}},
+    },
     # --- Format 27: Raumthermostat ---
-    160: {"name": "temperatureThreshold1", "map": "scaleF1", "chan": {
-              "01": {"position": 4, "from": 0, "to": 7}}},
-    161: {"name": "temperatureThreshold2", "map": "scaleF1", "chan": {
-              "01": {"position": 5, "from": 0, "to": 7}}},
-    162: {"name": "temperatureThreshold3", "map": "scaleF1", "chan": {
-              "01": {"position": 6, "from": 0, "to": 7}}},
-    163: {"name": "temperatureThreshold4", "map": "scaleF1", "chan": {
-              "01": {"position": 7, "from": 0, "to": 7}}},
-    164: {"name": "desired-temp",          "map": "scaleF1", "chan": {
-              "01": {"position": 9, "from": 0, "to": 7}}},
-    165: {"name": "measured-temp",         "map": "scaleF2", "chan": {
-              "01": {"position": 1, "from": 0, "to": 10}}},
-    166: {"name": "output",                "map": "onOff", "chan": {
-              "01": {"position": 0, "from": 3, "to": 3}}},
-    167: {"name": "manualOverride",        "map": "onOff", "chan": {
-              "01": {"position": 0, "from": 4, "to": 4}}},
-    168: {"name": "actTempLimit",          "chan": {
-              "01": {"position": 0, "from": 5, "to": 6}}},
-    169: {"name": "timeAutomatic",         "map": "onOff", "chan": {
-              "01": {"position": 2, "from": 3, "to": 3}}},
-    170: {"name": "manualMode",            "map": "onOff", "chan": {
-              "01": {"position": 2, "from": 4, "to": 4}}},
-    171: {"name": "measured-temp2",        "map": "scaleF2", "chan": {
-              "01": {"position": 3, "from": 0, "to": 10}}},
-
+    160: {
+        "name": "temperatureThreshold1",
+        "map": "scaleF1",
+        "chan": {"01": {"position": 4, "from": 0, "to": 7}},
+    },
+    161: {
+        "name": "temperatureThreshold2",
+        "map": "scaleF1",
+        "chan": {"01": {"position": 5, "from": 0, "to": 7}},
+    },
+    162: {
+        "name": "temperatureThreshold3",
+        "map": "scaleF1",
+        "chan": {"01": {"position": 6, "from": 0, "to": 7}},
+    },
+    163: {
+        "name": "temperatureThreshold4",
+        "map": "scaleF1",
+        "chan": {"01": {"position": 7, "from": 0, "to": 7}},
+    },
+    164: {
+        "name": "desired-temp",
+        "map": "scaleF1",
+        "chan": {"01": {"position": 9, "from": 0, "to": 7}},
+    },
+    165: {
+        "name": "measured-temp",
+        "map": "scaleF2",
+        "chan": {"01": {"position": 1, "from": 0, "to": 10}},
+    },
+    166: {
+        "name": "output",
+        "map": "onOff",
+        "chan": {"01": {"position": 0, "from": 3, "to": 3}},
+    },
+    167: {
+        "name": "manualOverride",
+        "map": "onOff",
+        "chan": {"01": {"position": 0, "from": 4, "to": 4}},
+    },
+    168: {"name": "actTempLimit", "chan": {"01": {"position": 0, "from": 5, "to": 6}}},
+    169: {
+        "name": "timeAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 2, "from": 3, "to": 3}},
+    },
+    170: {
+        "name": "manualMode",
+        "map": "onOff",
+        "chan": {"01": {"position": 2, "from": 4, "to": 4}},
+    },
+    171: {
+        "name": "measured-temp2",
+        "map": "scaleF2",
+        "chan": {"01": {"position": 3, "from": 0, "to": 10}},
+    },
     # --- Format 29: Heizkoerperantrieb (HSA) ---
-    180: {"name": "desired-temp",          "map": "scaleF3", "chan": {
-              "01": {"position": 0, "from": 0, "to": 5}}},
-    181: {"name": "measured-temp",         "map": "scaleF4", "chan": {
-              "01": {"position": 2, "from": 0, "to": 15}}},
-    182: {"name": "manualMode",            "map": "onOff", "chan": {
-              "01": {"position": 4, "from": 0, "to": 0}}},
-    183: {"name": "timeAutomatic",         "map": "onOff", "chan": {
-              "01": {"position": 4, "from": 1, "to": 1}}},
-    184: {"name": "sendingInterval",       "chan": {
-              "01": {"position": 4, "from": 6, "to": 11}}},
-    185: {"name": "batteryPercent",        "chan": {
-              "01": {"position": 7, "from": 0, "to": 6}}},
-    186: {"name": "valvePosition",         "chan": {
-              "01": {"position": 6, "from": 0, "to": 6}}},
-    187: {"name": "forceResponse",         "chan": {
-              "01": {"position": 8, "from": 7, "to": 7}}},
-
+    180: {
+        "name": "desired-temp",
+        "map": "scaleF3",
+        "chan": {"01": {"position": 0, "from": 0, "to": 5}},
+    },
+    181: {
+        "name": "measured-temp",
+        "map": "scaleF4",
+        "chan": {"01": {"position": 2, "from": 0, "to": 15}},
+    },
+    182: {
+        "name": "manualMode",
+        "map": "onOff",
+        "chan": {"01": {"position": 4, "from": 0, "to": 0}},
+    },
+    183: {
+        "name": "timeAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 4, "from": 1, "to": 1}},
+    },
+    184: {
+        "name": "sendingInterval",
+        "chan": {"01": {"position": 4, "from": 6, "to": 11}},
+    },
+    185: {
+        "name": "batteryPercent",
+        "chan": {"01": {"position": 7, "from": 0, "to": 6}},
+    },
+    186: {"name": "valvePosition", "chan": {"01": {"position": 6, "from": 0, "to": 6}}},
+    187: {"name": "forceResponse", "chan": {"01": {"position": 8, "from": 7, "to": 7}}},
     # --- Format 25 / 2B: Dimmaktor ---
-    300: {"name": "level",              "chan": {
-              "01": {"position": 7, "from": 0, "to": 6}}},
-    301: {"name": "manualMode",         "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 5, "to": 5}}},
-    302: {"name": "timeAutomatic",      "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 0, "to": 0}}},
-    303: {"name": "duskAutomatic",      "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 1, "to": 1}}},
-    304: {"name": "sunAutomatic",       "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 2, "to": 2}}},
-    305: {"name": "sunMode",            "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 4, "to": 4}}},
-    306: {"name": "dawnAutomatic",      "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 6, "to": 6}}},
-    307: {"name": "runningTime",        "chan": {
-              "01": {"position": 5, "from": 0, "to": 7}}},
-    308: {"name": "intermediateValue",  "chan": {
-              "01": {"position": 6, "from": 0, "to": 6}}},
-    309: {"name": "intermediateMode",   "map": "onOff", "chan": {
-              "01": {"position": 6, "from": 7, "to": 7}}},
-    310: {"name": "modeChange",         "map": "onOff", "chan": {
-              "01": {"position": 7, "from": 7, "to": 7}}},
-    311: {"name": "stairwellFunction",  "map": "onOff", "chan": {
-              "01": {"position": 1, "from": 7, "to": 7}}},
-    312: {"name": "stairwellTime",      "map": "scale10", "chan": {
-              "01": {"position": 2, "from": 0, "to": 14}}},
-    313: {"name": "saveIntermediateOnStop", "map": "onOff", "chan": {
-              "01": {"position": 3, "from": 7, "to": 7}}},
-
+    300: {"name": "level", "chan": {"01": {"position": 7, "from": 0, "to": 6}}},
+    301: {
+        "name": "manualMode",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 5, "to": 5}},
+    },
+    302: {
+        "name": "timeAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 0, "to": 0}},
+    },
+    303: {
+        "name": "duskAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 1, "to": 1}},
+    },
+    304: {
+        "name": "sunAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 2, "to": 2}},
+    },
+    305: {
+        "name": "sunMode",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 4, "to": 4}},
+    },
+    306: {
+        "name": "dawnAutomatic",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 6, "to": 6}},
+    },
+    307: {"name": "runningTime", "chan": {"01": {"position": 5, "from": 0, "to": 7}}},
+    308: {
+        "name": "intermediateValue",
+        "chan": {"01": {"position": 6, "from": 0, "to": 6}},
+    },
+    309: {
+        "name": "intermediateMode",
+        "map": "onOff",
+        "chan": {"01": {"position": 6, "from": 7, "to": 7}},
+    },
+    310: {
+        "name": "modeChange",
+        "map": "onOff",
+        "chan": {"01": {"position": 7, "from": 7, "to": 7}},
+    },
+    311: {
+        "name": "stairwellFunction",
+        "map": "onOff",
+        "chan": {"01": {"position": 1, "from": 7, "to": 7}},
+    },
+    312: {
+        "name": "stairwellTime",
+        "map": "scale10",
+        "chan": {"01": {"position": 2, "from": 0, "to": 14}},
+    },
+    313: {
+        "name": "saveIntermediateOnStop",
+        "map": "onOff",
+        "chan": {"01": {"position": 3, "from": 7, "to": 7}},
+    },
     # --- Format 24 / 24a: SX5 garage door ---
-    400: {"name": "obstacle",           "chan": {
-              "01": {"position": 2, "from": 4, "to": 4}}},
-    401: {"name": "obstacleDetection",  "map": "onOff", "chan": {
-              "01": {"position": 2, "from": 5, "to": 5}}},
-    402: {"name": "block",              "chan": {
-              "01": {"position": 2, "from": 6, "to": 6}}},
-    403: {"name": "blockDetection",     "map": "onOff", "chan": {
-              "01": {"position": 2, "from": 7, "to": 7}}},
-    404: {"name": "lightCurtain",       "chan": {
-              "01": {"position": 0, "from": 7, "to": 7}}},
-    405: {"name": "automaticClosing",   "map": "closeT", "chan": {
-              "01": {"position": 1, "from": 0, "to": 3}}},
-    406: {"name": "openSpeed",          "map": "openS", "chan": {
-              "01": {"position": 1, "from": 4, "to": 6}}},
-    407: {"name": "2000cycleAlarm",     "map": "onOff", "chan": {
-              "01": {"position": 1, "from": 7, "to": 7}}},
-    408: {"name": "wicketDoor",         "map": "onOff", "chan": {
-              "01": {"position": 5, "from": 7, "to": 7}}},
-    409: {"name": "backJump",           "map": "onOff", "chan": {
-              "01": {"position": 9, "from": 0, "to": 0}}},
-    410: {"name": "10minuteAlarm",      "map": "onOff", "chan": {
-              "01": {"position": 9, "from": 1, "to": 1}}},
-    411: {"name": "light",              "map": "onOff", "chan": {
-              "01": {"position": 9, "from": 2, "to": 2}}},
-
+    400: {"name": "obstacle", "chan": {"01": {"position": 2, "from": 4, "to": 4}}},
+    401: {
+        "name": "obstacleDetection",
+        "map": "onOff",
+        "chan": {"01": {"position": 2, "from": 5, "to": 5}},
+    },
+    402: {"name": "block", "chan": {"01": {"position": 2, "from": 6, "to": 6}}},
+    403: {
+        "name": "blockDetection",
+        "map": "onOff",
+        "chan": {"01": {"position": 2, "from": 7, "to": 7}},
+    },
+    404: {"name": "lightCurtain", "chan": {"01": {"position": 0, "from": 7, "to": 7}}},
+    405: {
+        "name": "automaticClosing",
+        "map": "closeT",
+        "chan": {"01": {"position": 1, "from": 0, "to": 3}},
+    },
+    406: {
+        "name": "openSpeed",
+        "map": "openS",
+        "chan": {"01": {"position": 1, "from": 4, "to": 6}},
+    },
+    407: {
+        "name": "2000cycleAlarm",
+        "map": "onOff",
+        "chan": {"01": {"position": 1, "from": 7, "to": 7}},
+    },
+    408: {
+        "name": "wicketDoor",
+        "map": "onOff",
+        "chan": {"01": {"position": 5, "from": 7, "to": 7}},
+    },
+    409: {
+        "name": "backJump",
+        "map": "onOff",
+        "chan": {"01": {"position": 9, "from": 0, "to": 0}},
+    },
+    410: {
+        "name": "10minuteAlarm",
+        "map": "onOff",
+        "chan": {"01": {"position": 9, "from": 1, "to": 1}},
+    },
+    411: {
+        "name": "light",
+        "map": "onOff",
+        "chan": {"01": {"position": 9, "from": 2, "to": 2}},
+    },
     # --- Version fields (all formats) ---
-    998: {"name": "version",            "map": "hex", "chan": {
-              "01": {"position": 9, "from": 0, "to": 6}}},
-    999: {"name": "version",            "map": "hex", "chan": {
-              "01": {"position": 8, "from": 0, "to": 7},
-              "02": {"position": 8, "from": 0, "to": 7}}},
+    998: {
+        "name": "version",
+        "map": "hex",
+        "chan": {"01": {"position": 9, "from": 0, "to": 6}},
+    },
+    999: {
+        "name": "version",
+        "map": "hex",
+        "chan": {
+            "01": {"position": 8, "from": 0, "to": 7},
+            "02": {"position": 8, "from": 0, "to": 7},
+        },
+    },
 }
 
 # ---------------------------------------------------------------------------
@@ -519,35 +844,35 @@ STATUS_IDS: Final[dict[int, dict]] = {
 
 SENSOR_MESSAGES: Final[dict[str, dict]] = {
     # Button / remote events
-    "0701": {"name": "up",             "chan": 6, "state": "Btn01"},
-    "0702": {"name": "stop",           "chan": 6, "state": "Btn02"},
-    "0703": {"name": "down",           "chan": 6, "state": "Btn03"},
-    "0718": {"name": "stepUp",         "chan": 6, "state": "Btn18"},
-    "0719": {"name": "stepDown",       "chan": 6, "state": "Btn19"},
-    "071A": {"name": "pressed",        "chan": 6, "state": "Btn1A"},
+    "0701": {"name": "up", "chan": 6, "state": "Btn01"},
+    "0702": {"name": "stop", "chan": 6, "state": "Btn02"},
+    "0703": {"name": "down", "chan": 6, "state": "Btn03"},
+    "0718": {"name": "stepUp", "chan": 6, "state": "Btn18"},
+    "0719": {"name": "stepDown", "chan": 6, "state": "Btn19"},
+    "071A": {"name": "pressed", "chan": 6, "state": "Btn1A"},
     # Environmental / weather sensor events
-    "0713": {"name": "dawn",           "chan": 5, "state": "dawn"},
-    "0709": {"name": "dusk",           "chan": 5, "state": "dusk"},
-    "0708": {"name": "startSun",       "chan": 5, "state": "on"},
-    "070A": {"name": "endSun",         "chan": 5, "state": "off"},
-    "070D": {"name": "startWind",      "chan": 5, "state": "on"},
-    "070E": {"name": "endWind",        "chan": 5, "state": "off"},
-    "0711": {"name": "startRain",      "chan": 5, "state": "on"},
-    "0712": {"name": "endRain",        "chan": 5, "state": "off"},
-    "071C": {"name": "startTemp",      "chan": 5, "state": "on"},
-    "071D": {"name": "endTemp",        "chan": 5, "state": "off"},
-    "071E": {"name": "startSmoke",     "chan": 5, "state": "on"},
-    "071F": {"name": "endSmoke",       "chan": 5, "state": "off"},
-    "0720": {"name": "startMotion",    "chan": 5, "state": "on"},
-    "0721": {"name": "endMotion",      "chan": 5, "state": "off"},
-    "0723": {"name": "opened",         "chan": 5, "state": "opened"},
-    "0724": {"name": "closed",         "chan": 5, "state": "closed"},
+    "0713": {"name": "dawn", "chan": 5, "state": "dawn"},
+    "0709": {"name": "dusk", "chan": 5, "state": "dusk"},
+    "0708": {"name": "startSun", "chan": 5, "state": "on"},
+    "070A": {"name": "endSun", "chan": 5, "state": "off"},
+    "070D": {"name": "startWind", "chan": 5, "state": "on"},
+    "070E": {"name": "endWind", "chan": 5, "state": "off"},
+    "0711": {"name": "startRain", "chan": 5, "state": "on"},
+    "0712": {"name": "endRain", "chan": 5, "state": "off"},
+    "071C": {"name": "startTemp", "chan": 5, "state": "on"},
+    "071D": {"name": "endTemp", "chan": 5, "state": "off"},
+    "071E": {"name": "startSmoke", "chan": 5, "state": "on"},
+    "071F": {"name": "endSmoke", "chan": 5, "state": "off"},
+    "0720": {"name": "startMotion", "chan": 5, "state": "on"},
+    "0721": {"name": "endMotion", "chan": 5, "state": "off"},
+    "0723": {"name": "opened", "chan": 5, "state": "opened"},
+    "0724": {"name": "closed", "chan": 5, "state": "closed"},
     "0725": {"name": "startVibration", "chan": 5},
-    "0726": {"name": "endVibration",   "chan": 5},
+    "0726": {"name": "endVibration", "chan": 5},
     # Switch actor events
-    "0E01": {"name": "off",            "chan": 6, "state": "Btn01"},
-    "0E02": {"name": "off",            "chan": 6, "state": "Btn02"},
-    "0E03": {"name": "on",             "chan": 6, "state": "Btn03"},
+    "0E01": {"name": "off", "chan": 6, "state": "Btn01"},
+    "0E02": {"name": "off", "chan": 6, "state": "Btn02"},
+    "0E03": {"name": "on", "chan": 6, "state": "Btn03"},
 }
 
 # ---------------------------------------------------------------------------
@@ -556,9 +881,9 @@ SENSOR_MESSAGES: Final[dict[str, dict]] = {
 # ---------------------------------------------------------------------------
 
 COMMAND_STATUS_TYPES: Final[dict[str, str]] = {
-    "getStatus":  "0F",
+    "getStatus": "0F",
     "getWeather": "13",
-    "getTime":    "10",
+    "getTime": "10",
 }
 
 # ---------------------------------------------------------------------------
@@ -583,13 +908,11 @@ BLIND_MODE_READINGS: Final[list[str]] = [
 # ---------------------------------------------------------------------------
 
 COMMANDS_HSA: Final[dict[str, dict]] = {
-    "manualMode":      {"bitFrom": 8,  "changeFlag": 10},
-    "timeAutomatic":   {"bitFrom": 9,  "changeFlag": 11},
-    "sendingInterval": {"bitFrom": 0,  "changeFlag": 7,
-                        "min": 0, "max": 60,  "step": 1},
-    "desired-temp":    {"bitFrom": 17, "changeFlag": 23,
-                        "min": 4, "max": 28,  "step": 0.5},
-    "windowContact":   {"bitFrom": 12, "changeFlag": 13},
+    "manualMode": {"bitFrom": 8, "changeFlag": 10},
+    "timeAutomatic": {"bitFrom": 9, "changeFlag": 11},
+    "sendingInterval": {"bitFrom": 0, "changeFlag": 7, "min": 0, "max": 60, "step": 1},
+    "desired-temp": {"bitFrom": 17, "changeFlag": 23, "min": 4, "max": 28, "step": 0.5},
+    "windowContact": {"bitFrom": 12, "changeFlag": 13},
 }
 
 # ---------------------------------------------------------------------------
