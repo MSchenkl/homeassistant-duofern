@@ -281,6 +281,8 @@ condition:
 
 The `tools/` directory contains standalone Python scripts for testing and device management without Home Assistant.
 
+> **Important Note:** The HA integration must be stopped while using CLI tools — only one process can hold the serial port at a time.
+
 ### Requirements
 
 ```bash
@@ -322,7 +324,6 @@ python3 tools/pair_duofern.py list              # List all devices with status
 python3 tools/pair_duofern.py pair --timeout 120 -v  # Extended timeout + debug
 ```
 
-**Important:** The HA integration must be disabled while using CLI tools, as only one process can access the serial port at a time.
 ---
 
 ## Protocol
