@@ -20,7 +20,7 @@
           "paired_devices": "Device Codes"
         },
         "data_description": {
-          "paired_devices": "Comma-separated list of 6-digit hex device codes (e.g. 406B0D, 4090EA, 40B689). These are the codes of your roller shutters and other DuoFern devices."
+          "paired_devices": "Comma-separated list of 6-digit hex device codes (e.g. 406B0D, 4090EA, 40B689). These are the codes of your DuoFern devices."
         }
       }
     },
@@ -46,6 +46,19 @@
         "data_description": {
           "paired_devices": "Comma-separated list of 6-digit hex device codes (e.g. 406B0D, 4090EA, 40B689)."
         }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "start_pairing": {
+        "name": "Start pairing"
+      },
+      "start_unpairing": {
+        "name": "Start unpairing"
+      },
+      "request_status": {
+        "name": "Status Broadcast"
       }
     }
   }

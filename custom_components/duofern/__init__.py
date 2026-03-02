@@ -6,12 +6,27 @@ on the FHEM Perl modules (10_DUOFERNSTICK.pm, 30_DUOFERN.pm).
 
 Architecture:
   config_flow.py  → User setup (serial port, system code, device codes)
-  __init__.py     → Integration setup, creates coordinator
-  coordinator.py  → DataUpdateCoordinator (push-based), owns the stick
+  __init__.py     → Integration setup, creates coordinator and stick device
+  coordinator.py  → DataUpdateCoordinator (push-based), owns the stick,
+                     manages pairing/unpairing, dispatches all incoming frames
   stick.py        → Async serial I/O, init handshake, send queue
-  protocol.py     → Pure protocol encoder/decoder
-  cover.py        → CoverEntity for roller shutters
-  const.py        → Constants
+  protocol.py     → Pure protocol encoder/decoder (no HA dependencies)
+  const.py        → All protocol constants, device tables, status mappings
+                     transcribed 1:1 from 30_DUOFERN.pm
+  cover.py        → CoverEntity for roller shutters (RolloTron, Rohrmotor,
+                     Troll, SX5) — all cover formats 21/23/23a/24/24a
+  button.py       → ButtonEntity for stick control: pairing starten,
+                     unpairing starten, status aller Geräte abfragen
+  diagnostics.py  → HA diagnostics panel ("Diagnose herunterladen") with
+                     full device snapshot (codes, types, readings, versions)
+  switch.py       → SwitchEntity for Universalaktor (2-channel), Steckdosenaktor,
+                     Troll Lichtmodus — all readings as extra_state_attributes
+  light.py        → LightEntity for Dimmaktor / Dimmer 9476 with brightness
+  climate.py      → ClimateEntity for Raumthermostat and Heizkörperantrieb
+  binary_sensor.py→ BinarySensorEntity for Bewegungsmelder, Rauchmelder,
+                     Fenster-Tuer-Kontakt — state via duofern_event bus
+  sensor.py       → SensorEntity for Umweltsensor weather readings
+                     (brightness, temperature, wind, sunDirection, sunHeight)
 """
 
 from __future__ import annotations
@@ -29,7 +44,15 @@ from .protocol import DuoFernId
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.COVER]
+PLATFORMS: list[Platform] = [
+    Platform.COVER,
+    Platform.BUTTON,
+    Platform.SWITCH,
+    Platform.LIGHT,
+    Platform.CLIMATE,
+    Platform.BINARY_SENSOR,
+    Platform.SENSOR,
+]
 
 # Type alias for runtime data stored on the config entry
 type DuoFernConfigEntry = ConfigEntry[DuoFernCoordinator]
@@ -99,7 +122,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DuoFernConfigEntry) -> b
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, system_code.hex)},
         manufacturer="Rademacher",
-        model="DuoFern USB-Stick 7000",
+        model="DuoFern USB-Stick",
         name=f"DuoFern Stick ({system_code.hex})",
     )
 

@@ -1,13 +1,17 @@
 {
   "domain": "duofern",
   "name": "Rademacher DuoFern",
-  "codeowners": ["@MSchenkl"],
+  "codeowners": [
+    "@MSchenkl"
+  ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/MSchenkl/homeassistant-duofern",
   "issue_tracker": "https://github.com/MSchenkl/homeassistant-duofern/issues",
   "iot_class": "local_push",
-  "requirements": ["pyserial-asyncio-fast==0.16"],
+  "requirements": [
+    "pyserial-asyncio-fast==0.16"
+  ],
   "usb": [
     {
       "vid": "0403",
@@ -16,5 +20,5 @@
       "manufacturer": "Rademacher"
     }
   ],
-  "version": "1.1.0"
+  "version": "1.2.0"
 }

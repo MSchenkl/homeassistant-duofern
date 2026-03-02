@@ -1,0 +1,65 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Rademacher DuoFern USB-Stick",
+                "description": "Konfigurieren Sie die Verbindung zu Ihrem DuoFern USB-Stick.",
+                "data": {
+                    "serial_port": "Serielle Schnittstelle",
+                    "system_code": "Systemcode (6-stellige Hex, beginnt mit 6F)"
+                },
+                "data_description": {
+                    "serial_port": "Der Pfad der seriellen Schnittstelle Ihres DuoFern USB-Sticks (z.B. /dev/ttyUSB0).",
+                    "system_code": "Der 6-stellige Hex-Code Ihres DuoFern-Systems (beginnt mit 6F, z.B. 6F1A2B). Dies ist die Seriennummer des Dongles."
+                }
+            },
+            "devices": {
+                "title": "Gekoppelte Geräte",
+                "description": "Geben Sie die 6-stelligen Hex-Codes Ihrer gekoppelten DuoFern-Geräte ein, getrennt durch Kommas.",
+                "data": {
+                    "paired_devices": "Gerätecodes"
+                },
+                "data_description": {
+                    "paired_devices": "Kommagetrennte Liste von 6-stelligen Hex-Gerätecodes (z.B. 406B0D, 4090EA, 40B689). Dies sind die Codes Ihrer DuoFern-Geräte."
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Verbindung zum DuoFern-Stick fehlgeschlagen. Überprüfen Sie den Pfad der seriellen Schnittstelle.",
+            "invalid_system_code": "Ungültiger Systemcode. Muss 6 Hex-Ziffern haben und mit 6F beginnen.",
+            "invalid_device_code": "Ein oder mehrere Gerätecodes sind ungültig. Jeder muss genau 6 Hex-Ziffern haben.",
+            "no_devices": "Bitte geben Sie mindestens einen Gerätecode ein.",
+            "unknown": "Ein unerwarteter Fehler ist aufgetreten."
+        },
+        "abort": {
+            "already_configured": "Dieser DuoFern-Stick ist bereits konfiguriert."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Gekoppelte DuoFern-Geräte",
+                "description": "Bearbeiten Sie die Liste der gekoppelten DuoFern-Gerätecodes. Die Integration wird nach dem Speichern neu geladen.",
+                "data": {
+                    "paired_devices": "Gerätecodes"
+                },
+                "data_description": {
+                    "paired_devices": "Kommagetrennte Liste von 6-stelligen Hex-Gerätecodes (z.B. 406B0D, 4090EA, 40B689)."
+                }
+            }
+        }
+    },
+    "entity": {
+        "button": {
+            "start_pairing": {
+                "name": "Pairing starten"
+            },
+            "start_unpairing": {
+                "name": "Unpairing starten"
+            },
+            "request_status": {
+                "name": "Status aller Geräte"
+            }
+        }
+    }
+}

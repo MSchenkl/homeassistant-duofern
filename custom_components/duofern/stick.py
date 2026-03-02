@@ -9,6 +9,13 @@ Architecture:
     ├── _protocol: DuoFernSerialProtocol (asyncio.Protocol)
     ├── _send_queue: asyncio.Queue of frames to send
     └── _init_sequence(): 7-step handshake with retry
+
+From 10_DUOFERNSTICK.pm:
+  DUOFERNSTICK_DoInit    → _init_sequence()
+  DUOFERNSTICK_Parse     → _on_frame_received()
+  DUOFERNSTICK_Read      → DuoFernSerialProtocol.data_received()
+  DUOFERNSTICK_AddSendQueue / DUOFERNSTICK_HandleWriteQueue
+                         → _process_send_queue()
 """
 
 from __future__ import annotations
@@ -16,7 +23,6 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Callable
-from typing import Any
 
 import serial_asyncio_fast  # type: ignore[import-untyped]
 
@@ -31,7 +37,6 @@ from .protocol import (
     DuoFernDecoder,
     DuoFernEncoder,
     DuoFernId,
-    MessageType,
     frame_to_hex,
 )
 
@@ -43,7 +48,7 @@ class DuoFernStick:
 
     Lifecycle:
       1. stick = DuoFernStick(port, system_code, paired_devices, callback)
-      2. await stick.connect()      # opens serial, runs init sequence
+      2. await stick.connect()       # opens serial, runs init sequence
       3. await stick.send_command()  # ACK-gated send queue
       4. await stick.disconnect()    # clean shutdown
     """
@@ -58,10 +63,10 @@ class DuoFernStick:
         """Initialize the stick manager.
 
         Args:
-            port: Serial port path (e.g. /dev/ttyUSB0)
-            system_code: 6-char hex dongle serial starting with 6F
-            paired_devices: List of paired device codes to register during init
-            message_callback: Called for every dispatachable message received
+            port:             Serial port path (e.g. /dev/ttyUSB0)
+            system_code:      6-char hex dongle serial starting with 6F
+            paired_devices:   List of paired device codes to register on init
+            message_callback: Called for every dispatchable message received
         """
         self._port = port
         self._system_code = system_code
@@ -71,7 +76,10 @@ class DuoFernStick:
         self._transport: asyncio.Transport | None = None
         self._serial_protocol: DuoFernSerialProtocol | None = None
 
-        # Send queue: only one command in-flight at a time (ACK-gated)
+        # Send queue: only one command in-flight at a time (ACK-gated).
+        # From 10_DUOFERNSTICK.pm:
+        #   cmdEx tracks in-flight count (0 or 1).
+        #   On ACK receipt, cmdEx decrements, next command is popped.
         self._send_queue: asyncio.Queue[bytearray] = asyncio.Queue()
         self._ack_event: asyncio.Event = asyncio.Event()
         self._cmd_in_flight: bool = False
@@ -83,7 +91,7 @@ class DuoFernStick:
 
     @property
     def connected(self) -> bool:
-        """Return True if serial port is open and init completed."""
+        """Return True if serial port is open AND init handshake is complete."""
         return self._connected and self._initialized
 
     async def connect(self) -> None:
@@ -96,16 +104,17 @@ class DuoFernStick:
 
         loop = asyncio.get_running_loop()
 
-        self._transport, self._serial_protocol = (
-            await serial_asyncio_fast.create_serial_connection(
-                loop,
-                lambda: DuoFernSerialProtocol(self._on_frame_received),
-                self._port,
-                baudrate=SERIAL_BAUDRATE,
-                bytesize=serial_asyncio_fast.serial.EIGHTBITS,
-                parity=serial_asyncio_fast.serial.PARITY_NONE,
-                stopbits=serial_asyncio_fast.serial.STOPBITS_ONE,
-            )
+        (
+            self._transport,
+            self._serial_protocol,
+        ) = await serial_asyncio_fast.create_serial_connection(
+            loop,
+            lambda: DuoFernSerialProtocol(self._on_frame_received),
+            self._port,
+            baudrate=SERIAL_BAUDRATE,
+            bytesize=serial_asyncio_fast.serial.EIGHTBITS,
+            parity=serial_asyncio_fast.serial.PARITY_NONE,
+            stopbits=serial_asyncio_fast.serial.STOPBITS_ONE,
         )
 
         self._connected = True
@@ -114,7 +123,7 @@ class DuoFernStick:
         # Run the initialization handshake
         await self._init_sequence()
 
-        # Start the send queue processor
+        # Start the ACK-gated send queue processor
         self._queue_task = asyncio.create_task(self._process_send_queue())
 
         _LOGGER.info("DuoFern stick initialized successfully")
@@ -142,7 +151,7 @@ class DuoFernStick:
         """Enqueue a command frame for sending.
 
         Commands are sent one-at-a-time, waiting for ACK before sending next.
-        This matches FHEM's DUOFERNSTICK_AddSendQueue behavior.
+        From 10_DUOFERNSTICK.pm: DUOFERNSTICK_AddSendQueue.
         """
         if not self._connected:
             raise ConnectionError("DuoFern stick not connected")
@@ -161,15 +170,20 @@ class DuoFernStick:
         """Run the 7-step initialization handshake.
 
         Directly mirrors DUOFERNSTICK_DoInit from 10_DUOFERNSTICK.pm:
-          1. Send Init1 (0x01), wait for response
-          2. Send Init2 (0x0E), wait for response
-          3. Send SetDongle (0x0A + system_code), wait for response, send ACK
-          4. Send Init3 (0x14 0x14), wait for response, send ACK
-          5. For each paired device: Send SetPairs (0x03), wait, ACK
-          6. Send InitEnd (0x10 0x01), wait for response, ACK
-          7. Send StatusRequest broadcast, wait for response, ACK
+          1. Send Init1   (0x01),          wait for response
+          2. Send Init2   (0x0E),          wait for response
+          3. Send SetDongle (0x0A + code), wait for response, send ACK
+          4. Send Init3   (0x14 0x14),     wait for response, send ACK
+          5. For each paired device:
+               Send SetPairs (0x03 + idx + code), wait for response, send ACK
+          6. Send InitEnd (0x10 0x01),     wait for response, send ACK
+          7. Send StatusRequest broadcast, wait for response, send ACK
 
         Retries up to INIT_RETRY_COUNT times on failure.
+
+        From 10_DUOFERNSTICK.pm:
+          # This is relevant for windows/USB only
+          (flush buffer before starting init)
         """
         for attempt in range(INIT_RETRY_COUNT):
             try:
@@ -185,7 +199,7 @@ class DuoFernStick:
                 if resp is None:
                     continue
 
-                # Step 3: SetDongle
+                # Step 3: SetDongle — register our system code with the stick
                 resp = await self._send_and_wait(
                     DuoFernEncoder.build_set_dongle(self._system_code)
                 )
@@ -199,7 +213,10 @@ class DuoFernStick:
                     continue
                 self._write_frame(DuoFernEncoder.build_ack())
 
-                # Step 5: Register each paired device
+                # Step 5: Register each paired device by index.
+                # From 10_DUOFERNSTICK.pm: duoSetPairs = "03nnyyyyyy..."
+                #   nn = slot index (0-based)
+                #   yyyyyy = device code
                 for idx, device in enumerate(self._paired_devices):
                     resp = await self._send_and_wait(
                         DuoFernEncoder.build_set_pair(idx, device)
@@ -207,18 +224,19 @@ class DuoFernStick:
                     if resp is None:
                         _LOGGER.warning(
                             "Failed to register device %s at slot %d",
-                            device.hex, idx,
+                            device.hex,
+                            idx,
                         )
                         continue
                     self._write_frame(DuoFernEncoder.build_ack())
 
-                # Step 6: InitEnd
+                # Step 6: InitEnd — signals end of device registration
                 resp = await self._send_and_wait(DuoFernEncoder.build_init_end())
                 if resp is None:
                     continue
                 self._write_frame(DuoFernEncoder.build_ack())
 
-                # Step 7: Status broadcast
+                # Step 7: Status broadcast — trigger initial state from all devices
                 resp = await self._send_and_wait(
                     DuoFernEncoder.build_status_request_broadcast()
                 )
@@ -227,15 +245,11 @@ class DuoFernStick:
                 self._write_frame(DuoFernEncoder.build_ack())
 
                 self._initialized = True
-                _LOGGER.info(
-                    "DuoFern stick init complete (attempt %d)", attempt + 1
-                )
+                _LOGGER.info("DuoFern stick init complete (attempt %d)", attempt + 1)
                 return
 
             except TimeoutError:
-                _LOGGER.warning(
-                    "Init attempt %d timed out, retrying...", attempt + 1
-                )
+                _LOGGER.warning("Init attempt %d timed out, retrying...", attempt + 1)
                 continue
 
         raise ConnectionError(
@@ -245,25 +259,29 @@ class DuoFernStick:
     async def _send_and_wait(
         self, frame: bytearray, timeout: float = ACK_TIMEOUT
     ) -> bytearray | None:
-        """Send a frame and wait for ANY response (used during init).
+        """Send a frame and wait for ANY response (used only during init).
 
-        During init, we use synchronous request/response, not the ACK-gated queue.
+        During init, we use synchronous request/response — not the ACK-gated
+        queue. This mirrors the blocking read in DUOFERNSTICK_DoInit.
+
+        From 10_DUOFERNSTICK.pm:
+          # Dispatch data in the buffer before the proper answer.
+          (partial frames are accumulated and dispatched when complete)
         """
         if self._serial_protocol is None:
             return None
 
-        response_future: asyncio.Future[bytearray] = asyncio.get_running_loop().create_future()
+        response_future: asyncio.Future[bytearray] = (
+            asyncio.get_running_loop().create_future()
+        )
         self._serial_protocol.set_init_response_future(response_future)
 
         self._write_frame(frame)
 
         try:
-            response = await asyncio.wait_for(response_future, timeout=timeout)
-            return response
+            return await asyncio.wait_for(response_future, timeout=timeout)
         except asyncio.TimeoutError:
-            _LOGGER.warning(
-                "Timeout waiting for response to %s", frame_to_hex(frame)
-            )
+            _LOGGER.warning("Timeout waiting for response to %s", frame_to_hex(frame))
             return None
         finally:
             self._serial_protocol.set_init_response_future(None)
@@ -273,15 +291,16 @@ class DuoFernStick:
     # ------------------------------------------------------------------
 
     async def _process_send_queue(self) -> None:
-        """Process the command send queue.
+        """Process the command send queue — one command in-flight at a time.
 
-        Only one command is in-flight at a time. After sending, we wait for
-        an ACK (0x81) before sending the next. 5-second timeout matches FHEM.
+        From 10_DUOFERNSTICK.pm:
+          DUOFERNSTICK_HandleWriteQueue / DUOFERNSTICK_AddSendQueue:
+            cmdEx tracks in-flight count (0 or 1).
+            On ACK receipt, cmdEx decrements, next command is popped.
+            5-second timeout triggers HandleWriteQueue regardless (safety).
 
-        From DUOFERNSTICK_HandleWriteQueue / DUOFERNSTICK_AddSendQueue:
-          - cmdEx tracks in-flight count (0 or 1)
-          - On ACK receipt, cmdEx decrements, next command is popped
-          - 5-second timeout triggers HandleWriteQueue regardless (safety)
+        We mirror this: send one frame, wait for ACK (or timeout),
+        then send the next.
         """
         while not self._closing:
             try:
@@ -295,7 +314,9 @@ class DuoFernStick:
             self._write_frame(frame)
             _LOGGER.debug("Command sent: %s", frame_to_hex(frame))
 
-            # Wait for ACK with timeout
+            # Wait for ACK (0x81...) with timeout.
+            # From 10_DUOFERNSTICK.pm: timeout = 3s default, or RA_Timeout attr.
+            # We use ACK_TIMEOUT (5s) as a safe margin.
             try:
                 await asyncio.wait_for(self._ack_event.wait(), timeout=ACK_TIMEOUT)
                 _LOGGER.debug("ACK received for command")
@@ -324,25 +345,26 @@ class DuoFernStick:
         """Handle a complete 22-byte frame from the serial protocol.
 
         Mirrors DUOFERNSTICK_Parse from 10_DUOFERNSTICK.pm:
-          1. If NOT an ACK, send ACK back immediately
-          2. If IS an ACK, signal the send queue
-          3. If message should be dispatched, call the message callback
+          1. If NOT an ACK → send ACK back immediately
+          2. If IS an ACK  → signal the send queue (release next command)
+          3. If message should be dispatched → call message callback
+             (ACKs and broadcast acks 0FFF11... are NOT dispatched)
         """
         hex_str = frame_to_hex(frame)
         _LOGGER.debug("RX: %s", hex_str)
 
         is_ack = DuoFernDecoder.is_ack(frame)
 
-        # Step 1: Send ACK for non-ACK messages
+        # Step 1: Send ACK for every non-ACK message
         if not is_ack:
             self._write_frame(DuoFernEncoder.build_ack())
 
-        # Step 2: If it's an ACK, release the send queue
+        # Step 2: Release send queue on ACK
         if is_ack:
             self._ack_event.set()
-            return  # ACKs are not dispatched
+            return  # ACKs are never dispatched to the coordinator
 
-        # Step 3: Dispatch to message callback
+        # Step 3: Dispatch to coordinator (excludes broadcast ack 0FFF11...)
         if DuoFernDecoder.should_dispatch(frame):
             try:
                 self._message_callback(frame)
@@ -351,13 +373,17 @@ class DuoFernStick:
 
 
 class DuoFernSerialProtocol(asyncio.Protocol):
-    """asyncio.Protocol that accumulates bytes into 22-byte frames.
+    """asyncio.Protocol that accumulates bytes into complete 22-byte frames.
 
     Mirrors DUOFERNSTICK_Read from 10_DUOFERNSTICK.pm:
-      - Bytes arrive in arbitrary chunks
-      - Accumulated in a buffer
+      - Bytes arrive in arbitrary-sized chunks from the OS
+      - Accumulated in a buffer (PARTIAL in FHEM)
       - Complete 22-byte frames are extracted and dispatched
-      - Partial data is flushed after 0.5s timeout (safety)
+      - Partial trailing data is flushed after FLUSH_BUFFER_TIMEOUT (safety)
+
+    From 10_DUOFERNSTICK.pm:
+      $hash->{PARTIAL} = $duodata; # for recursive calls
+      # Read anstatt input sonst funzt read_const_time nicht.
     """
 
     def __init__(
@@ -390,16 +416,19 @@ class DuoFernSerialProtocol(asyncio.Protocol):
     def data_received(self, data: bytes) -> None:
         """Called when data arrives from the serial port.
 
-        Accumulates bytes and extracts complete frames.
+        Accumulates bytes and extracts complete 22-byte frames.
+        From 10_DUOFERNSTICK.pm DUOFERNSTICK_Read:
+          # Dispatch data in the buffer before the proper answer.
+          $hash->{PARTIAL} = $mduodata; # for recursive calls
         """
-        # Cancel pending flush timer
+        # Cancel pending flush timer — new data arrived
         if self._flush_handle is not None:
             self._flush_handle.cancel()
             self._flush_handle = None
 
         self._buffer.extend(data)
 
-        # Extract complete frames
+        # Extract all complete 22-byte frames from the buffer
         while len(self._buffer) >= FRAME_SIZE_BYTES:
             frame = bytearray(self._buffer[:FRAME_SIZE_BYTES])
             del self._buffer[:FRAME_SIZE_BYTES]
@@ -408,10 +437,10 @@ class DuoFernSerialProtocol(asyncio.Protocol):
             if self._init_response_future and not self._init_response_future.done():
                 self._init_response_future.set_result(frame)
             else:
-                # Normal operation: deliver via callback
+                # Normal operation: deliver via frame callback
                 self._frame_callback(frame)
 
-        # Set flush timer for partial data
+        # Schedule flush of any leftover partial data after timeout
         if len(self._buffer) > 0:
             loop = asyncio.get_running_loop()
             self._flush_handle = loop.call_later(
@@ -419,7 +448,11 @@ class DuoFernSerialProtocol(asyncio.Protocol):
             )
 
     def _flush_buffer(self) -> None:
-        """Discard partial data after timeout (safety net)."""
+        """Discard partial data after timeout — safety net for protocol errors.
+
+        From 10_DUOFERNSTICK.pm: partial frames in PARTIAL are discarded
+        when a new valid frame starts (implicit by overwrite).
+        """
         if self._buffer:
             _LOGGER.debug(
                 "Flushing %d partial bytes: %s",
