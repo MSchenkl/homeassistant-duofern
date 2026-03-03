@@ -151,6 +151,7 @@ class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
             name=f"DuoFern {device_code.device_type_name} ({self._hex_code})",
             manufacturer="Rademacher",
             model=device_code.device_type_name,
+            serial_number=self._hex_code,
             sw_version=None,
             via_device=(DOMAIN, coordinator.system_code.hex),
         )
@@ -320,6 +321,7 @@ class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
                 ),
                 manufacturer="Rademacher",
                 model=self._device_code.device_type_name,
+                serial_number=self._hex_code,
                 sw_version=state.status.version,
                 via_device=(DOMAIN, self.coordinator.system_code.hex),
             )

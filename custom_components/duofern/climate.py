@@ -126,6 +126,8 @@ class DuoFernClimate(CoordinatorEntity[DuoFernCoordinator], ClimateEntity):
             name=f"DuoFern {device_state.device_code.device_type_name} ({hex_code})",
             manufacturer="Rademacher",
             model=device_state.device_code.device_type_name,
+            serial_number=hex_code,
+            sw_version=None,
             via_device=(DOMAIN, coordinator.system_code.hex),
         )
 
@@ -252,6 +254,7 @@ class DuoFernClimate(CoordinatorEntity[DuoFernCoordinator], ClimateEntity):
                 ),
                 manufacturer="Rademacher",
                 model=self._device_code.device_type_name,
+                serial_number=self._hex_code,
                 sw_version=state.status.version,
                 via_device=(DOMAIN, self.coordinator.system_code.hex),
             )

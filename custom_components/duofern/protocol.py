@@ -885,7 +885,9 @@ class DuoFernDecoder:
 
         # Firmware version at byte 12: high nibble = major, low nibble = minor
         ver_byte = frame[12]
-        result.version = f"{(ver_byte >> 4) & 0x0F}.{ver_byte & 0x0F}"
+        result.version = (
+            f"{(ver_byte >> 4) & 0x0F}.{ver_byte & 0x0F}" if ver_byte != 0 else None
+        )
 
         fmt = DuoFernDecoder._determine_format(frame, device_code)
         readings: dict[str, object] = {}
