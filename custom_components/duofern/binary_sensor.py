@@ -76,17 +76,23 @@ _DEVICE_CLASS_FOR_TYPE: dict[int, BinarySensorDeviceClass] = {
 
 # SX5 obstacle/block/lightCurtain entities
 # key -> (translation_key, device_class, icon)
-_SX5_OBSTACLE_SENSORS: dict[str, tuple[str, BinarySensorDeviceClass, str]] = {
+# Generic obstacle/block sensors for all covers with obstacle detection
+# (Rohrmotor 0x49, Rohrmotor-Aktor 0x42, SX5 0x4E, Troll 0x4C/0x70 etc.)
+_COVER_OBSTACLE_SENSORS: dict[str, tuple[str, BinarySensorDeviceClass, str]] = {
     "obstacle": (
-        "sx5_obstacle",
+        "cover_obstacle",
         BinarySensorDeviceClass.PROBLEM,
         "mdi:alert-circle",
     ),
     "block": (
-        "sx5_block",
+        "cover_block",
         BinarySensorDeviceClass.PROBLEM,
         "mdi:garage-alert",
     ),
+}
+
+# SX5-only: light curtain sensor
+_SX5_OBSTACLE_SENSORS: dict[str, tuple[str, BinarySensorDeviceClass, str]] = {
     "lightCurtain": (
         "sx5_light_curtain",
         BinarySensorDeviceClass.SAFETY,
@@ -143,13 +149,13 @@ async def async_setup_entry(
                     "Adding binary sensor entity for device %s", hex_code
                 )
 
-        # SX5 obstacle/block/lightCurtain sensors
-        if device_state.device_code.device_type == 0x4E:
+        # Obstacle/block sensors for all covers with detection hardware
+        if device_state.device_code.is_obstacle_cover:
             for reading_key, (trans_key, dev_class, icon) in (
-                _SX5_OBSTACLE_SENSORS.items()
+                _COVER_OBSTACLE_SENSORS.items()
             ):
                 entities.append(
-                    DuoFernSX5ObstacleSensor(
+                    DuoFernObstacleSensor(
                         coordinator=coordinator,
                         device_state=device_state,
                         hex_code=hex_code,
@@ -159,9 +165,24 @@ async def async_setup_entry(
                         icon=icon,
                     )
                 )
+            # SX5 additionally has a light curtain sensor
+            if device_state.device_code.device_type == 0x4E:
+                for reading_key, (trans_key, dev_class, icon) in (
+                    _SX5_OBSTACLE_SENSORS.items()
+                ):
+                    entities.append(
+                        DuoFernObstacleSensor(
+                            coordinator=coordinator,
+                            device_state=device_state,
+                            hex_code=hex_code,
+                            reading_key=reading_key,
+                            translation_key=trans_key,
+                            device_class=dev_class,
+                            icon=icon,
+                        )
+                    )
             _LOGGER.debug(
-                "Adding obstacle/block/lightCurtain sensors for SX5 %s",
-                hex_code,
+                "Adding obstacle/block sensors for cover %s", hex_code,
             )
 
     if entities:
@@ -402,10 +423,10 @@ class DuoFernWindowSensor(
         self.async_write_ha_state()
 
 # ---------------------------------------------------------------------------
-# SX5 obstacle / block / lightCurtain binary sensors
+# Cover obstacle / block / lightCurtain binary sensors
 # ---------------------------------------------------------------------------
 
-class DuoFernSX5ObstacleSensor(
+class DuoFernObstacleSensor(
     CoordinatorEntity[DuoFernCoordinator], BinarySensorEntity
 ):
     """A status-frame-based binary sensor for SX5 obstacle detection.

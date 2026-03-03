@@ -40,6 +40,8 @@ from enum import IntEnum
 
 from .const import (
     BINARY_SENSOR_DEVICE_TYPES,
+    BLINDS_DEVICE_TYPES,
+    OBSTACLE_COVER_TYPES,
     BLIND_MODE_READINGS,
     CLIMATE_DEVICE_TYPES,
     COMMANDS_HSA,
@@ -131,6 +133,16 @@ class DuoFernId:
     @property
     def is_cover(self) -> bool:
         return self.raw[0] in COVER_DEVICE_TYPES
+
+    @property
+    def is_blinds(self) -> bool:
+        """Return True if this device supports slat/blinds mode."""
+        return self.raw[0] in BLINDS_DEVICE_TYPES
+
+    @property
+    def is_obstacle_cover(self) -> bool:
+        """Return True if this cover can report obstacle/block detection."""
+        return self.raw[0] in OBSTACLE_COVER_TYPES
 
     @property
     def is_light(self) -> bool:

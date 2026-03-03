@@ -107,12 +107,6 @@
       }
     },
     "binary_sensor": {
-      "sx5_obstacle": {
-        "name": "Obstacle"
-      },
-      "sx5_block": {
-        "name": "Block"
-      },
       "sx5_light_curtain": {
         "name": "Light Curtain"
       },
@@ -121,6 +115,188 @@
       },
       "window_tilted": {
         "name": "Tilted"
+      },
+      "cover_obstacle": {
+        "name": "Obstacle"
+      },
+      "cover_block": {
+        "name": "Block"
+      }
+    },
+    "switch": {
+      "dawn_automatic": {
+        "name": "Dawn Automatic"
+      },
+      "dusk_automatic": {
+        "name": "Dusk Automatic"
+      },
+      "manual_mode": {
+        "name": "Manual Mode"
+      },
+      "time_automatic": {
+        "name": "Time Automatic"
+      },
+      "sun_automatic": {
+        "name": "Sun Automatic"
+      },
+      "sun_mode": {
+        "name": "Sun Mode"
+      },
+      "ventilating_mode": {
+        "name": "Ventilating Mode"
+      },
+      "wind_automatic": {
+        "name": "Wind Automatic"
+      },
+      "wind_mode": {
+        "name": "Wind Mode"
+      },
+      "rain_automatic": {
+        "name": "Rain Automatic"
+      },
+      "rain_mode": {
+        "name": "Rain Mode"
+      },
+      "reversal": {
+        "name": "Reversal"
+      },
+      "blinds_mode": {
+        "name": "Blinds Mode"
+      },
+      "tilt_in_sun_pos": {
+        "name": "Tilt In Sun Position"
+      },
+      "tilt_in_vent_pos": {
+        "name": "Tilt In Vent Position"
+      },
+      "tilt_after_move_level": {
+        "name": "Tilt After Move Level"
+      },
+      "tilt_after_stop_down": {
+        "name": "Tilt After Stop Down"
+      },
+      "mode_change": {
+        "name": "Mode Change"
+      },
+      "stairwell_function": {
+        "name": "Stairwell Function"
+      },
+      "intermediate_mode": {
+        "name": "Intermediate Mode"
+      },
+      "save_intermediate_on_stop": {
+        "name": "Save Intermediate On Stop"
+      },
+      "dcf": {
+        "name": "DCF Time Sync"
+      },
+      "trigger_rain": {
+        "name": "Trigger Rain"
+      },
+      "window_contact": {
+        "name": "Window Contact"
+      },
+      "ten_minute_alarm": {
+        "name": "10 Minute Alarm"
+      },
+      "two_thousand_cycle_alarm": {
+        "name": "2000 Cycle Alarm"
+      },
+      "back_jump": {
+        "name": "Back Jump"
+      }
+    },
+    "number": {
+      "sun_position": {
+        "name": "Sun Position"
+      },
+      "ventilating_position": {
+        "name": "Ventilating Position"
+      },
+      "slat_position": {
+        "name": "Slat Position"
+      },
+      "slat_run_time": {
+        "name": "Slat Run Time"
+      },
+      "default_slat_pos": {
+        "name": "Default Slat Position"
+      },
+      "running_time_cover": {
+        "name": "Running Time"
+      },
+      "stairwell_time": {
+        "name": "Stairwell Time"
+      },
+      "intermediate_value": {
+        "name": "Intermediate Value"
+      },
+      "running_time_dimmer": {
+        "name": "Running Time"
+      },
+      "temp_threshold_1": {
+        "name": "Temp Threshold 1"
+      },
+      "temp_threshold_2": {
+        "name": "Temp Threshold 2"
+      },
+      "temp_threshold_3": {
+        "name": "Temp Threshold 3"
+      },
+      "temp_threshold_4": {
+        "name": "Temp Threshold 4"
+      },
+      "latitude": {
+        "name": "Latitude"
+      },
+      "longitude": {
+        "name": "Longitude"
+      },
+      "timezone": {
+        "name": "Timezone Offset"
+      },
+      "sending_interval": {
+        "name": "Sending Interval"
+      }
+    },
+    "select": {
+      "wind_direction": {
+        "name": "Wind Direction"
+      },
+      "rain_direction": {
+        "name": "Rain Direction"
+      },
+      "motor_dead_time": {
+        "name": "Motor Dead Time"
+      },
+      "automatic_closing": {
+        "name": "Automatic Closing"
+      },
+      "open_speed": {
+        "name": "Open Speed"
+      },
+      "act_temp_limit": {
+        "name": "Active Temp Limit"
+      },
+      "interval": {
+        "name": "Transmit Interval"
+      }
+    },
+    "sensor": {
+      "brightness": {
+        "name": "Brightness"
+      },
+      "temperature": {
+        "name": "Temperature"
+      },
+      "wind_speed": {
+        "name": "Wind"
+      },
+      "sun_direction": {
+        "name": "Sun Direction"
+      },
+      "sun_height": {
+        "name": "Sun Height"
       }
     }
   }

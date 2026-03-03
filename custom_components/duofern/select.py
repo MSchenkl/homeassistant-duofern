@@ -54,6 +54,7 @@ SELECT_DESCRIPTIONS: tuple[DuoFernSelectDescription, ...] = (
     # --- Covers (Troll / RolloTube / Rohrmotor Steuerung) ---
     DuoFernSelectDescription(
         key="motorDeadTime",
+        translation_key="motor_dead_time",
         reading_key="motorDeadTime",
         name="Motor Dead Time",
         options=["off", "short", "long"],
@@ -64,6 +65,7 @@ SELECT_DESCRIPTIONS: tuple[DuoFernSelectDescription, ...] = (
     ),
     DuoFernSelectDescription(
         key="windDirection",
+        translation_key="wind_direction",
         reading_key="windDirection",
         name="Wind Direction",
         options=["up", "down"],
@@ -74,6 +76,7 @@ SELECT_DESCRIPTIONS: tuple[DuoFernSelectDescription, ...] = (
     ),
     DuoFernSelectDescription(
         key="rainDirection",
+        translation_key="rain_direction",
         reading_key="rainDirection",
         name="Rain Direction",
         options=["up", "down"],
@@ -85,6 +88,7 @@ SELECT_DESCRIPTIONS: tuple[DuoFernSelectDescription, ...] = (
     # --- SX5 ---
     DuoFernSelectDescription(
         key="automaticClosing",
+        translation_key="automatic_closing",
         reading_key="automaticClosing",
         name="Automatic Closing",
         options=["off", "30", "60", "90", "120", "150", "180", "210", "240"],
@@ -95,6 +99,7 @@ SELECT_DESCRIPTIONS: tuple[DuoFernSelectDescription, ...] = (
     ),
     DuoFernSelectDescription(
         key="openSpeed",
+        translation_key="open_speed",
         reading_key="openSpeed",
         name="Open Speed (s)",
         options=["11", "15", "19"],
@@ -106,6 +111,7 @@ SELECT_DESCRIPTIONS: tuple[DuoFernSelectDescription, ...] = (
     # --- Raumthermostat ---
     DuoFernSelectDescription(
         key="actTempLimit",
+        translation_key="act_temp_limit",
         reading_key="actTempLimit",
         name="Active Temp Limit",
         options=["1", "2", "3", "4"],
@@ -117,6 +123,7 @@ SELECT_DESCRIPTIONS: tuple[DuoFernSelectDescription, ...] = (
     # --- Umweltsensor: transmit interval ---
     DuoFernSelectDescription(
         key="interval",
+        translation_key="interval",
         reading_key="interval",
         name="Transmit Interval",
         options=["off","1","2","3","4","5","6","7","8","9","10","15","20","30","40","50","60","70","80","90","100"],

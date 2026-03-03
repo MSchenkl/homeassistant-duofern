@@ -61,10 +61,10 @@
         "name": "Statusabfrage"
       },
       "cover_dusk": {
-        "name": "Dämmerungsposition"
+        "name": "Abenddämmerung"
       },
       "cover_dawn": {
-        "name": "Morgenposition"
+        "name": "Morgendämmerung"
       },
       "cover_toggle": {
         "name": "Umschalten"
@@ -107,12 +107,6 @@
       }
     },
     "binary_sensor": {
-      "sx5_obstacle": {
-        "name": "Hindernis"
-      },
-      "sx5_block": {
-        "name": "Blockierung"
-      },
       "sx5_light_curtain": {
         "name": "Lichtschranke"
       },
@@ -121,6 +115,188 @@
       },
       "window_tilted": {
         "name": "Gekippt"
+      },
+      "cover_obstacle": {
+        "name": "Hindernis"
+      },
+      "cover_block": {
+        "name": "Blockierung"
+      }
+    },
+    "switch": {
+      "dawn_automatic": {
+        "name": "Morgendämmerung Automatik"
+      },
+      "dusk_automatic": {
+        "name": "Abenddämmerung Automatik"
+      },
+      "manual_mode": {
+        "name": "Manueller Modus"
+      },
+      "time_automatic": {
+        "name": "Zeitautomatik"
+      },
+      "sun_automatic": {
+        "name": "Sonnenautomatik"
+      },
+      "sun_mode": {
+        "name": "Sonnenmodus"
+      },
+      "ventilating_mode": {
+        "name": "Lüftungsmodus"
+      },
+      "wind_automatic": {
+        "name": "Windautomatik"
+      },
+      "wind_mode": {
+        "name": "Windmodus"
+      },
+      "rain_automatic": {
+        "name": "Regenautomatik"
+      },
+      "rain_mode": {
+        "name": "Regenmodus"
+      },
+      "reversal": {
+        "name": "Drehrichtungsumkehr"
+      },
+      "blinds_mode": {
+        "name": "Jalousie-Modus"
+      },
+      "tilt_in_sun_pos": {
+        "name": "Neigen bei Sonnenposition"
+      },
+      "tilt_in_vent_pos": {
+        "name": "Neigen bei Lüftungsposition"
+      },
+      "tilt_after_move_level": {
+        "name": "Neigen nach Fahrt"
+      },
+      "tilt_after_stop_down": {
+        "name": "Neigen nach Stopp-Ab"
+      },
+      "mode_change": {
+        "name": "Moduswechsel"
+      },
+      "stairwell_function": {
+        "name": "Treppenhausfunktion"
+      },
+      "intermediate_mode": {
+        "name": "Zwischenwert-Modus"
+      },
+      "save_intermediate_on_stop": {
+        "name": "Zwischenwert bei Stopp speichern"
+      },
+      "dcf": {
+        "name": "DCF-Zeitsynchronisation"
+      },
+      "trigger_rain": {
+        "name": "Regenauslöser"
+      },
+      "window_contact": {
+        "name": "Fensterkontakt"
+      },
+      "ten_minute_alarm": {
+        "name": "10-Minuten-Alarm"
+      },
+      "two_thousand_cycle_alarm": {
+        "name": "2000-Zyklus-Alarm"
+      },
+      "back_jump": {
+        "name": "Rücksprung"
+      }
+    },
+    "number": {
+      "sun_position": {
+        "name": "Sonnenposition"
+      },
+      "ventilating_position": {
+        "name": "Lüftungsposition"
+      },
+      "slat_position": {
+        "name": "Lamellenposition"
+      },
+      "slat_run_time": {
+        "name": "Laufzeit Lamellen"
+      },
+      "default_slat_pos": {
+        "name": "Standard-Lamellenposition"
+      },
+      "running_time_cover": {
+        "name": "Laufzeit"
+      },
+      "stairwell_time": {
+        "name": "Treppenhauszeit"
+      },
+      "intermediate_value": {
+        "name": "Zwischenwert"
+      },
+      "running_time_dimmer": {
+        "name": "Laufzeit"
+      },
+      "temp_threshold_1": {
+        "name": "Temperaturschwelle 1"
+      },
+      "temp_threshold_2": {
+        "name": "Temperaturschwelle 2"
+      },
+      "temp_threshold_3": {
+        "name": "Temperaturschwelle 3"
+      },
+      "temp_threshold_4": {
+        "name": "Temperaturschwelle 4"
+      },
+      "latitude": {
+        "name": "Breitengrad"
+      },
+      "longitude": {
+        "name": "Längengrad"
+      },
+      "timezone": {
+        "name": "Zeitzonenversatz"
+      },
+      "sending_interval": {
+        "name": "Sendeintervall"
+      }
+    },
+    "select": {
+      "wind_direction": {
+        "name": "Windrichtung"
+      },
+      "rain_direction": {
+        "name": "Regenrichtung"
+      },
+      "motor_dead_time": {
+        "name": "Motorstillstandszeit"
+      },
+      "automatic_closing": {
+        "name": "Automatisches Schließen"
+      },
+      "open_speed": {
+        "name": "Öffnungsgeschwindigkeit"
+      },
+      "act_temp_limit": {
+        "name": "Aktive Temperaturschwelle"
+      },
+      "interval": {
+        "name": "Sendeintervall"
+      }
+    },
+    "sensor": {
+      "brightness": {
+        "name": "Helligkeit"
+      },
+      "temperature": {
+        "name": "Temperatur"
+      },
+      "wind_speed": {
+        "name": "Wind"
+      },
+      "sun_direction": {
+        "name": "Sonnenrichtung"
+      },
+      "sun_height": {
+        "name": "Sonnenhöhe"
       }
     }
   }

@@ -65,6 +65,7 @@ SENSOR_DESCRIPTIONS: tuple[DuoFernSensorDescription, ...] = (
     DuoFernSensorDescription(
         key="brightness",
         reading_key="brightness",
+        translation_key="brightness",
         name="Helligkeit",
         device_class=SensorDeviceClass.ILLUMINANCE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -73,6 +74,7 @@ SENSOR_DESCRIPTIONS: tuple[DuoFernSensorDescription, ...] = (
     DuoFernSensorDescription(
         key="temperature",
         reading_key="temperature",
+        translation_key="temperature",
         name="Temperatur",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -81,6 +83,7 @@ SENSOR_DESCRIPTIONS: tuple[DuoFernSensorDescription, ...] = (
     DuoFernSensorDescription(
         key="wind",
         reading_key="wind",
+        translation_key="wind_speed",
         name="Wind",
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
@@ -89,6 +92,7 @@ SENSOR_DESCRIPTIONS: tuple[DuoFernSensorDescription, ...] = (
     DuoFernSensorDescription(
         key="sunDirection",
         reading_key="sunDirection",
+        translation_key="sun_direction",
         name="Sonnenrichtung",
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement="°",
@@ -97,6 +101,7 @@ SENSOR_DESCRIPTIONS: tuple[DuoFernSensorDescription, ...] = (
     DuoFernSensorDescription(
         key="sunHeight",
         reading_key="sunHeight",
+        translation_key="sun_height",
         name="Sonnenhöhe",
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement="°",

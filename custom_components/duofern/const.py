@@ -131,6 +131,26 @@ COVER_DEVICE_TYPES_FORMAT24: Final[set[int]] = {
     0x4E,  # SX5
 }
 
+# Cover devices that can report obstacle/block via format-24 status frames
+# Determined by hardware capability (obstacle detection feature in the motor)
+OBSTACLE_COVER_TYPES: Final[set[int]] = {
+    0x42,  # Rohrmotor-Aktor
+    0x47,  # Rohrmotor Steuerung
+    0x49,  # Rohrmotor
+    0x4B,  # Connect-Aktor
+    0x4C,  # Troll Basis
+    0x4E,  # SX5
+    0x70,  # Troll Comfort DuoFern
+}
+
+# Devices that support blinds/slat mode (setsBlinds in FHEM dispatch for 42|4B|4C|70)
+BLINDS_DEVICE_TYPES: Final[set[int]] = {
+    0x42,  # Rohrmotor-Aktor
+    0x4B,  # Connect-Aktor
+    0x4C,  # Troll Basis
+    0x70,  # Troll Comfort DuoFern
+}
+
 # All covers combined
 COVER_DEVICE_TYPES: Final[set[int]] = (
     COVER_DEVICE_TYPES_FORMAT21

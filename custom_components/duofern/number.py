@@ -59,14 +59,17 @@ class DuoFernNumberDescription(NumberEntityDescription):
 
 # Cover device types (all covers)
 _ALL_COVERS = frozenset({0x40, 0x41, 0x42, 0x47, 0x49, 0x4B, 0x4C, 0x4E, 0x61, 0x70})
-# Troll / RolloTube types (have blindsMode)
+# Troll / RolloTube types (have runningTime, windMode etc.)
 _TROLL_TYPES = frozenset({0x42, 0x47, 0x49, 0x4B, 0x4C, 0x70})
+# Blinds types only (slat entities — 0x42|4B|4C|70 per FHEM dispatch)
+_BLINDS_TYPES = frozenset({0x42, 0x4B, 0x4C, 0x70})
 
 
 NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
     # --- All covers ---
     DuoFernNumberDescription(
         key="sunPosition",
+        translation_key="sun_position",
         reading_key="sunPosition",
         name="Sun Position",
         native_min_value=0,
@@ -80,6 +83,7 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
     ),
     DuoFernNumberDescription(
         key="ventilatingPosition",
+        translation_key="ventilating_position",
         reading_key="ventilatingPosition",
         name="Ventilating Position",
         native_min_value=0,
@@ -94,6 +98,7 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
     # --- Blinds (Troll types when blindsMode=on — always create, availability via state) ---
     DuoFernNumberDescription(
         key="slatPosition",
+        translation_key="slat_position",
         reading_key="slatPosition",
         name="Slat Position",
         native_min_value=0,
@@ -102,11 +107,12 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
         native_unit_of_measurement="%",
         entity_category=EntityCategory.CONFIG,
         icon="mdi:blinds",
-        device_types=_TROLL_TYPES,
+        device_types=_BLINDS_TYPES,
         coordinator_method="async_set_slat_position",
     ),
     DuoFernNumberDescription(
         key="slatRunTime",
+        translation_key="slat_run_time",
         reading_key="slatRunTime",
         name="Slat Run Time",
         native_min_value=0,
@@ -115,11 +121,12 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
         native_unit_of_measurement="s",
         entity_category=EntityCategory.CONFIG,
         icon="mdi:timer",
-        device_types=_TROLL_TYPES,
+        device_types=_BLINDS_TYPES,
         coordinator_method="async_set_slat_run_time",
     ),
     DuoFernNumberDescription(
         key="defaultSlatPos",
+        translation_key="default_slat_pos",
         reading_key="defaultSlatPos",
         name="Default Slat Position",
         native_min_value=0,
@@ -128,12 +135,13 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
         native_unit_of_measurement="%",
         entity_category=EntityCategory.CONFIG,
         icon="mdi:blinds",
-        device_types=_TROLL_TYPES,
+        device_types=_BLINDS_TYPES,
         coordinator_method="async_set_default_slat_pos",
     ),
     # --- Troll: running time ---
     DuoFernNumberDescription(
         key="runningTime_cover",
+        translation_key="running_time_cover",
         reading_key="runningTime",
         name="Running Time",
         native_min_value=0,
@@ -148,6 +156,7 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
     # --- Switch / Dimmer: stairwell time ---
     DuoFernNumberDescription(
         key="stairwellTime",
+        translation_key="stairwell_time",
         reading_key="stairwellTime",
         name="Stairwell Time",
         native_min_value=0,
@@ -162,6 +171,7 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
     # --- Dimmer: intermediate value + running time ---
     DuoFernNumberDescription(
         key="intermediateValue",
+        translation_key="intermediate_value",
         reading_key="intermediateValue",
         name="Intermediate Value",
         native_min_value=0,
@@ -175,6 +185,7 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
     ),
     DuoFernNumberDescription(
         key="runningTime_dimmer",
+        translation_key="running_time_dimmer",
         reading_key="runningTime",
         name="Running Time",
         native_min_value=0,
@@ -189,6 +200,7 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
     # --- Raumthermostat: temperature thresholds 1-4 ---
     DuoFernNumberDescription(
         key="temperatureThreshold1",
+        translation_key="temp_threshold_1",
         reading_key="temperatureThreshold1",
         name="Temp Threshold 1",
         native_min_value=-40,
@@ -202,6 +214,7 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
     ),
     DuoFernNumberDescription(
         key="temperatureThreshold2",
+        translation_key="temp_threshold_2",
         reading_key="temperatureThreshold2",
         name="Temp Threshold 2",
         native_min_value=-40,
@@ -215,6 +228,7 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
     ),
     DuoFernNumberDescription(
         key="temperatureThreshold3",
+        translation_key="temp_threshold_3",
         reading_key="temperatureThreshold3",
         name="Temp Threshold 3",
         native_min_value=-40,
@@ -228,6 +242,7 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
     ),
     DuoFernNumberDescription(
         key="temperatureThreshold4",
+        translation_key="temp_threshold_4",
         reading_key="temperatureThreshold4",
         name="Temp Threshold 4",
         native_min_value=-40,
@@ -242,6 +257,7 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
     # --- Umweltsensor 00: location config ---
     DuoFernNumberDescription(
         key="latitude",
+        translation_key="latitude",
         reading_key="latitude",
         name="Latitude",
         native_min_value=0,
@@ -254,6 +270,7 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
     ),
     DuoFernNumberDescription(
         key="longitude",
+        translation_key="longitude",
         reading_key="longitude",
         name="Longitude",
         native_min_value=-90,
@@ -266,6 +283,7 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
     ),
     DuoFernNumberDescription(
         key="timezone",
+        translation_key="timezone",
         reading_key="timezone",
         name="Timezone Offset",
         native_min_value=0,
@@ -280,6 +298,7 @@ NUMBER_DESCRIPTIONS: tuple[DuoFernNumberDescription, ...] = (
     # --- HSA: sending interval ---
     DuoFernNumberDescription(
         key="sendingInterval",
+        translation_key="sending_interval",
         reading_key="sendingInterval",
         name="Sending Interval",
         native_min_value=1,
