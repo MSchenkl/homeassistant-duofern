@@ -115,6 +115,12 @@
       },
       "sx5_light_curtain": {
         "name": "Lichtschranke"
+      },
+      "window_opened": {
+        "name": "Geöffnet"
+      },
+      "window_tilted": {
+        "name": "Gekippt"
       }
     }
   }

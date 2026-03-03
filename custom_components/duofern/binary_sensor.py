@@ -112,16 +112,36 @@ async def async_setup_entry(
     for hex_code, device_state in coordinator.data.devices.items():
         # Event-based sensors
         if device_state.device_code.is_binary_sensor:
-            entities.append(
-                DuoFernBinarySensor(
-                    coordinator=coordinator,
-                    device_state=device_state,
-                    hex_code=hex_code,
+            if device_state.device_code.device_type == 0xAC:
+                # Fenster-Tuer-Kontakt: two separate entities for opened vs tilted
+                for sensor_type, trans_key in (
+                    ("opened", "window_opened"),
+                    ("tilted", "window_tilted"),
+                ):
+                    entities.append(
+                        DuoFernWindowSensor(
+                            coordinator=coordinator,
+                            device_state=device_state,
+                            hex_code=hex_code,
+                            sensor_type=sensor_type,
+                            translation_key=trans_key,
+                        )
+                    )
+                _LOGGER.debug(
+                    "Adding window sensor entities (opened+tilted) for device %s",
+                    hex_code,
                 )
-            )
-            _LOGGER.debug(
-                "Adding binary sensor entity for device %s", hex_code
-            )
+            else:
+                entities.append(
+                    DuoFernBinarySensor(
+                        coordinator=coordinator,
+                        device_state=device_state,
+                        hex_code=hex_code,
+                    )
+                )
+                _LOGGER.debug(
+                    "Adding binary sensor entity for device %s", hex_code
+                )
 
         # SX5 obstacle/block/lightCurtain sensors
         if device_state.device_code.device_type == 0x4E:
@@ -180,7 +200,6 @@ class DuoFernBinarySensor(
         self._device_code = device_state.device_code
         self._attr_unique_id = f"{DOMAIN}_{hex_code}"
         self._is_on: bool | None = None
-
         self._attr_device_class = _DEVICE_CLASS_FOR_TYPE.get(
             self._device_code.device_type,
             BinarySensorDeviceClass.MOTION,
@@ -263,6 +282,124 @@ class DuoFernBinarySensor(
     def _handle_coordinator_update(self) -> None:
         self.async_write_ha_state()
 
+
+
+
+# ---------------------------------------------------------------------------
+# Fenster-Tuer-Kontakt (0xAC) — two entities: opened and tilted
+# ---------------------------------------------------------------------------
+
+
+class DuoFernWindowSensor(
+    CoordinatorEntity[DuoFernCoordinator], BinarySensorEntity
+):
+    """A single binary sensor for the DuoFern Fenster-Tuer-Kontakt (0xAC).
+
+    Two instances are created per device:
+      - "opened":  on=True only for 'opened' event  (FHEM state 'on')
+      - "tilted":  on=True only for 'tilted' event  (FHEM state 'tilted')
+
+    From 30_DUOFERN.pm:
+      0723 opened  -> state="on"     (sensorMsg)
+      0724 closed  -> state="off"    (sensorMsg)
+      AC + byte14=FE -> state="tilted"
+    """
+
+    _attr_has_entity_name = True
+    _attr_device_class = BinarySensorDeviceClass.WINDOW
+
+    # Events that set this specific instance to True/False
+    _EVENTS_ON: dict[str, set[str]] = {
+        "opened": {"opened"},
+        "tilted": {"tilted"},
+    }
+    _EVENTS_OFF: set[str] = {"closed"}
+
+    def __init__(
+        self,
+        coordinator: DuoFernCoordinator,
+        device_state: DuoFernDeviceState,
+        hex_code: str,
+        sensor_type: str,          # "opened" or "tilted"
+        translation_key: str,
+    ) -> None:
+        super().__init__(coordinator)
+        self._hex_code = hex_code
+        self._device_code = device_state.device_code
+        self._sensor_type = sensor_type
+        self._attr_translation_key = translation_key
+        self._attr_unique_id = f"{DOMAIN}_{hex_code}_{sensor_type}"
+        self._is_on: bool | None = None
+
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, hex_code)},
+            name=(
+                f"DuoFern {device_state.device_code.device_type_name}"
+                f" ({hex_code})"
+            ),
+            manufacturer="Rademacher",
+            model=device_state.device_code.device_type_name,
+            via_device=(DOMAIN, coordinator.system_code.hex),
+        )
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to DuoFern events on the HA event bus."""
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self.hass.bus.async_listen(
+                DUOFERN_EVENT, self._handle_duofern_event
+            )
+        )
+
+    @property
+    def _device_state(self) -> DuoFernDeviceState | None:
+        if self.coordinator.data is None:
+            return None
+        return self.coordinator.data.devices.get(self._hex_code)
+
+    @property
+    def available(self) -> bool:
+        return self._device_state is not None
+
+    @property
+    def is_on(self) -> bool | None:
+        return self._is_on
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        state = self._device_state
+        if state is None:
+            return {}
+        attrs: dict[str, Any] = {}
+        if state.battery_state is not None:
+            attrs["battery_state"] = state.battery_state
+        if state.battery_percent is not None:
+            attrs["battery_percent"] = state.battery_percent
+        if state.last_seen is not None:
+            attrs["last_seen"] = state.last_seen
+        return attrs
+
+    @callback
+    def _handle_duofern_event(self, event: Event) -> None:
+        """Handle duofern_event — react only to relevant events for this instance."""
+        data = event.data
+        if data.get("device_code") != self._hex_code:
+            return
+
+        event_name: str = data.get("event", "")
+        my_on_events = self._EVENTS_ON[self._sensor_type]
+
+        if event_name in my_on_events:
+            self._is_on = True
+            self.async_write_ha_state()
+        elif event_name in self._EVENTS_OFF:
+            self._is_on = False
+            self.async_write_ha_state()
+        # Other events (e.g. the sibling opened/tilted) are ignored
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        self.async_write_ha_state()
 
 # ---------------------------------------------------------------------------
 # SX5 obstacle / block / lightCurtain binary sensors

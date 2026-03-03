@@ -115,6 +115,12 @@
       },
       "sx5_light_curtain": {
         "name": "Light Curtain"
+      },
+      "window_opened": {
+        "name": "Opened"
+      },
+      "window_tilted": {
+        "name": "Tilted"
       }
     }
   }
