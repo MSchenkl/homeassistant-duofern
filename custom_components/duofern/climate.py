@@ -121,15 +121,6 @@ class DuoFernClimate(CoordinatorEntity[DuoFernCoordinator], ClimateEntity):
         self._hex_code = hex_code
         self._device_code = device_state.device_code
         self._attr_unique_id = f"{DOMAIN}_{hex_code}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, hex_code)},
-            name=f"DuoFern {device_state.device_code.device_type_name} ({hex_code})",
-            manufacturer="Rademacher",
-            model=device_state.device_code.device_type_name,
-            serial_number=hex_code,
-            sw_version=None,
-            via_device=(DOMAIN, coordinator.system_code.hex),
-        )
 
     @property
     def _device_state(self) -> DuoFernDeviceState | None:
@@ -244,18 +235,21 @@ class DuoFernClimate(CoordinatorEntity[DuoFernCoordinator], ClimateEntity):
                 await self.async_set_temperature(**{ATTR_TEMPERATURE: 20.0})
 
     @callback
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info, including firmware version when available."""
+        data = self.coordinator.data
+        state = data.devices.get(self._hex_code) if data else None
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._hex_code)},
+            name=(f"DuoFern {self._device_code.device_type_name} ({self._hex_code})"),
+            manufacturer="Rademacher",
+            model=self._device_code.device_type_name,
+            serial_number=self._hex_code,
+            sw_version=state.status.version if state else None,
+            via_device=(DOMAIN, self.coordinator.system_code.hex),
+        )
+
     def _handle_coordinator_update(self) -> None:
         state = self._device_state
-        if state and state.status.version:
-            self._attr_device_info = DeviceInfo(
-                identifiers={(DOMAIN, self._hex_code)},
-                name=(
-                    f"DuoFern {self._device_code.device_type_name} ({self._hex_code})"
-                ),
-                manufacturer="Rademacher",
-                model=self._device_code.device_type_name,
-                serial_number=self._hex_code,
-                sw_version=state.status.version,
-                via_device=(DOMAIN, self.coordinator.system_code.hex),
-            )
         self.async_write_ha_state()

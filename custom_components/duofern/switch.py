@@ -439,18 +439,6 @@ class DuoFernSwitch(CoordinatorEntity[DuoFernCoordinator], SwitchEntity):
             if self._channel and self._device_code.has_channels
             else ""
         )
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, hex_code)},
-            name=(
-                f"DuoFern {self._device_code.device_type_name}"
-                f" ({self._device_code.hex}){channel_label}"
-            ),
-            manufacturer="Rademacher",
-            model=self._device_code.device_type_name,
-            serial_number=hex_code,
-            sw_version=None,
-            via_device=(DOMAIN, coordinator.system_code.hex),
-        )
 
     @property
     def _device_state(self) -> DuoFernDeviceState | None:
@@ -503,26 +491,25 @@ class DuoFernSwitch(CoordinatorEntity[DuoFernCoordinator], SwitchEntity):
         )
 
     @callback
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info, including firmware version when available."""
+        data = self.coordinator.data
+        state = data.devices.get(self._hex_code) if data else None
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._hex_code)},
+            name=(
+                f"DuoFern {self._device_code.device_type_name}"
+                f" ({self._device_code.hex}){self._channel_label}"
+            ),
+            manufacturer="Rademacher",
+            model=self._device_code.device_type_name,
+            serial_number=self._hex_code,
+            sw_version=state.status.version if state else None,
+            via_device=(DOMAIN, self.coordinator.system_code.hex),
+        )
+
     def _handle_coordinator_update(self) -> None:
-        state = self._device_state
-        if state and state.status.version:
-            channel_label = (
-                f" Kanal {self._channel}"
-                if self._channel and self._device_code.has_channels
-                else ""
-            )
-            self._attr_device_info = DeviceInfo(
-                identifiers={(DOMAIN, self._hex_code)},
-                name=(
-                    f"DuoFern {self._device_code.device_type_name}"
-                    f" ({self._device_code.hex}){channel_label}"
-                ),
-                manufacturer="Rademacher",
-                model=self._device_code.device_type_name,
-                serial_number=self._hex_code,
-                sw_version=state.status.version,
-                via_device=(DOMAIN, self.coordinator.system_code.hex),
-            )
         self.async_write_ha_state()
 
 
