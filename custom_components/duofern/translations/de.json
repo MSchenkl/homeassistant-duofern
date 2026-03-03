@@ -121,6 +121,12 @@
       },
       "cover_block": {
         "name": "Blockierung"
+      },
+      "sun_detected": {
+        "name": "Sonne erkannt"
+      },
+      "wind_detected": {
+        "name": "Wind erkannt"
       }
     },
     "switch": {
@@ -315,7 +321,9 @@
       "channel_03": "Kanal 3 – {subtype}",
       "channel_04": "Kanal 4 – {subtype}",
       "channel_05": "Kanal 5 – {subtype}",
-      "channel_06": "Kanal 6 – {subtype}"
+      "channel_06": "Kanal 6 – {subtype}",
+      "sun": "Sonne – {subtype}",
+      "wind": "Wind – {subtype}"
     },
     "trigger_subtype": {
       "up": "Hoch",
@@ -325,7 +333,9 @@
       "stepDown": "Schritt runter",
       "pressed": "Gedrückt",
       "on": "Ein",
-      "off": "Aus"
+      "off": "Aus",
+      "start": "Start",
+      "end": "Ende"
     }
   }
 }

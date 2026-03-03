@@ -191,6 +191,33 @@ SENSOR_DEVICE_TYPES: Final[set[int]] = {
     0xA5,  # Sonnensensor
     0xA9,  # Sonnen-/Windsensor
     0xAA,  # Markisenwaechter
+    0xAF,  # Sonnensensor (alternate model)
+}
+
+# Dedicated external environmental sensor devices (A5/AF/A9/AA).
+# These send sun/wind events and are registered as standalone HA devices.
+# Note: 0x61 RolloTron Comfort Master also sends sun events but is already
+# registered as a Cover — it gets an additional binary_sensor entity instead.
+# From 30_DUOFERN.pm: none of these have get/set commands.
+ENVIRONMENTAL_SENSOR_DEVICE_TYPES: Final[set[int]] = {
+    0xA5,  # Sonnensensor
+    0xAF,  # Sonnensensor (alternate model)
+    0xA9,  # Sonnen-/Windsensor
+    0xAA,  # Markisenwaechter (wind guard for awnings)
+}
+
+# Devices that send startSun/endSun events (sensorMsg 0708/070A)
+SUN_SENSOR_DEVICE_TYPES: Final[set[int]] = {
+    0x61,  # RolloTron Comfort Master (built-in brightness sensor)
+    0xA5,  # Sonnensensor
+    0xAF,  # Sonnensensor (alternate model)
+    0xA9,  # Sonnen-/Windsensor
+}
+
+# Devices that send startWind/endWind events (sensorMsg 070D/070E)
+WIND_SENSOR_DEVICE_TYPES: Final[set[int]] = {
+    0xA9,  # Sonnen-/Windsensor
+    0xAA,  # Markisenwaechter
 }
 
 # Remote controls / wall buttons — fire HA events, no persistent state

@@ -49,6 +49,7 @@ from .const import (
     DEVICE_CHANNELS,
     DEVICE_STATUS_FORMAT_OVERRIDE,
     DEVICE_TYPES,
+    ENVIRONMENTAL_SENSOR_DEVICE_TYPES,
     FRAME_SIZE_BYTES,
     FRAME_SIZE_HEX,
     LIGHT_DEVICE_TYPES,
@@ -59,7 +60,9 @@ from .const import (
     STATUS_GROUPS,
     STATUS_IDS,
     STATUS_MAPPING,
+    SUN_SENSOR_DEVICE_TYPES,
     SWITCH_DEVICE_TYPES,
+    WIND_SENSOR_DEVICE_TYPES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -168,6 +171,27 @@ class DuoFernId:
     @property
     def is_remote(self) -> bool:
         return self.raw[0] in REMOTE_DEVICE_TYPES
+
+    @property
+    def is_env_sensor(self) -> bool:
+        """True for dedicated external environmental sensors (A5/AF/A9/AA).
+
+        These have no get/set commands in FHEM — pure event senders.
+        """
+        return self.raw[0] in ENVIRONMENTAL_SENSOR_DEVICE_TYPES
+
+    @property
+    def is_sun_sensor(self) -> bool:
+        """True if device sends startSun/endSun (sensorMsg 0708/070A).
+
+        Includes 0x61 RolloTron Comfort Master (built-in brightness sensor).
+        """
+        return self.raw[0] in SUN_SENSOR_DEVICE_TYPES
+
+    @property
+    def is_wind_sensor(self) -> bool:
+        """True if device sends startWind/endWind (sensorMsg 070D/070E)."""
+        return self.raw[0] in WIND_SENSOR_DEVICE_TYPES
 
     @property
     def has_channels(self) -> bool:

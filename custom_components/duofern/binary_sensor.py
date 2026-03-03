@@ -48,7 +48,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DuoFernConfigEntry
-from .const import DOMAIN
+from .const import DOMAIN, SUN_SENSOR_DEVICE_TYPES, WIND_SENSOR_DEVICE_TYPES
 from .coordinator import DUOFERN_EVENT, DuoFernCoordinator, DuoFernDeviceState
 
 _LOGGER = logging.getLogger(__name__)
@@ -62,6 +62,10 @@ _EVENT_TO_STATE: dict[str, bool] = {
     "endSmoke": False,
     "startRain": True,
     "endRain": False,
+    "startSun": True,
+    "endSun": False,
+    "startWind": True,
+    "endWind": False,
     "startVibration": True,
     "endVibration": False,
     "opened": True,  # Fensterkontakt: open = True
@@ -187,6 +191,62 @@ async def async_setup_entry(
             _LOGGER.debug(
                 "Adding obstacle/block sensors for cover %s",
                 hex_code,
+            )
+
+        # Sun sensor for 0x61 RolloTron Comfort Master (built-in brightness sensor).
+        # The cover entity is already registered by cover.py; this binary sensor
+        # attaches to the same device via shared identifiers={(DOMAIN, hex_code)}.
+        # From 30_DUOFERN.pm line 1310: $chan="01" forced for 0x61.
+        if device_state.device_code.device_type == 0x61:
+            entities.append(
+                DuoFernEnvBinarySensor(
+                    coordinator=coordinator,
+                    device_state=device_state,
+                    hex_code=hex_code,
+                    event_on="startSun",
+                    event_off="endSun",
+                    translation_key="sun_detected",
+                    sensor_device_class=BinarySensorDeviceClass.LIGHT,
+                    is_own_device=False,
+                )
+            )
+            _LOGGER.debug(
+                "Adding sun_detected binary sensor for 0x61 device %s", hex_code
+            )
+
+        # Dedicated environmental sensor devices (A5/AF/A9/AA).
+        # From 30_DUOFERN.pm: no get/set commands, pure event senders.
+        if device_state.device_code.is_env_sensor:
+            if device_state.device_code.is_sun_sensor:
+                entities.append(
+                    DuoFernEnvBinarySensor(
+                        coordinator=coordinator,
+                        device_state=device_state,
+                        hex_code=hex_code,
+                        event_on="startSun",
+                        event_off="endSun",
+                        translation_key="sun_detected",
+                        sensor_device_class=BinarySensorDeviceClass.LIGHT,
+                        is_own_device=True,
+                    )
+                )
+            if device_state.device_code.is_wind_sensor:
+                entities.append(
+                    DuoFernEnvBinarySensor(
+                        coordinator=coordinator,
+                        device_state=device_state,
+                        hex_code=hex_code,
+                        event_on="startWind",
+                        event_off="endWind",
+                        translation_key="wind_detected",
+                        sensor_device_class=BinarySensorDeviceClass.MOVING,
+                        is_own_device=True,
+                    )
+                )
+            _LOGGER.debug(
+                "Adding env sensor binary sensor(s) for device %s (type 0x%02X)",
+                hex_code,
+                device_state.device_code.device_type,
             )
 
     if entities:
@@ -554,3 +614,108 @@ class DuoFernObstacleSensor(CoordinatorEntity[DuoFernCoordinator], BinarySensorE
                     device.id, sw_version=state.status.version
                 )
         self.async_write_ha_state()
+
+
+# ---------------------------------------------------------------------------
+# Environmental binary sensors (sun / wind detection)
+# ---------------------------------------------------------------------------
+
+
+class DuoFernEnvBinarySensor(CoordinatorEntity[DuoFernCoordinator], BinarySensorEntity):
+    """Binary sensor for sun or wind detection events.
+
+    Two cases:
+      1. is_own_device=True: dedicated external sensors (A5/AF/A9/AA).
+         DeviceInfo is registered here — this entity creates the HA device.
+      2. is_own_device=False: RolloTron Comfort Master (0x61).
+         The cover entity already owns the HA device; we attach here via
+         shared identifiers={(DOMAIN, hex_code)}.
+
+    From 30_DUOFERN.pm sensorMsg:
+      0708 startSun  state=on  (A5, AF, A9, 0x61)
+      070A endSun    state=off
+      070D startWind state=on  (A9, AA)
+      070E endWind   state=off
+    """
+
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        coordinator: DuoFernCoordinator,
+        device_state: DuoFernDeviceState,
+        hex_code: str,
+        event_on: str,
+        event_off: str,
+        translation_key: str,
+        sensor_device_class: BinarySensorDeviceClass,
+        is_own_device: bool,
+    ) -> None:
+        super().__init__(coordinator)
+        self._hex_code = hex_code
+        self._device_code = device_state.device_code
+        self._event_on = event_on
+        self._event_off = event_off
+        self._is_own_device = is_own_device
+        self._attr_unique_id = f"{DOMAIN}_{hex_code}_{translation_key}"
+        self._attr_translation_key = translation_key
+        self._attr_device_class = sensor_device_class
+        self._is_on: bool | None = None
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to DuoFern events on the HA event bus."""
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self.hass.bus.async_listen(DUOFERN_EVENT, self._handle_duofern_event)
+        )
+
+    @property
+    def _device_state(self) -> DuoFernDeviceState | None:
+        if self.coordinator.data is None:
+            return None
+        return self.coordinator.data.devices.get(self._hex_code)
+
+    @property
+    def available(self) -> bool:
+        return self._device_state is not None
+
+    @property
+    def is_on(self) -> bool | None:
+        return self._is_on
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info.
+
+        For dedicated sensors (is_own_device=True): registers a new HA device.
+        For 0x61 (is_own_device=False): attaches to the existing cover device.
+        """
+        if self._is_own_device:
+            return DeviceInfo(
+                identifiers={(DOMAIN, self._hex_code)},
+                name=(
+                    f"DuoFern {self._device_code.device_type_name} ({self._hex_code})"
+                ),
+                manufacturer="Rademacher",
+                model=self._device_code.device_type_name,
+                serial_number=self._hex_code,
+                via_device=(DOMAIN, self.coordinator.system_code.hex),
+            )
+        # Cover device (0x61): attach to the existing device entry
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._hex_code)},
+        )
+
+    @callback
+    def _handle_duofern_event(self, event: Event) -> None:
+        """Update state when a matching duofern_event fires."""
+        data = event.data
+        if data.get("device_code") != self._hex_code:
+            return
+        event_name: str = data.get("event", "")
+        if event_name == self._event_on:
+            self._is_on = True
+            self.async_write_ha_state()
+        elif event_name == self._event_off:
+            self._is_on = False
+            self.async_write_ha_state()

@@ -385,8 +385,11 @@ async def async_setup_entry(
             )
             _LOGGER.debug("Adding switch entity for device %s", hex_code)
 
-        # 2. Automation toggle switches (CONFIG) for actuators only (not remotes)
-        if not device_state.device_code.is_remote:
+        # 2. Automation toggle switches (CONFIG) for actuators only
+        if (
+            not device_state.device_code.is_remote
+            and not device_state.device_code.is_env_sensor
+        ):
             for desc in AUTOMATION_SWITCH_DESCRIPTIONS:
                 if dev_type in desc.device_types:
                     entities.append(

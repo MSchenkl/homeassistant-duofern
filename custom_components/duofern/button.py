@@ -97,8 +97,8 @@ async def async_setup_entry(
             entities.append(DuoFernResetSettingsButton(coordinator, dev_code))
             entities.append(DuoFernResetFullButton(coordinator, dev_code))
 
-        # remotePair/remoteUnpair — not for remotes themselves (no set commands)
-        if not dev_code.is_remote:
+        # remotePair/remoteUnpair — not for remotes or env sensors (no set commands)
+        if not dev_code.is_remote and not dev_code.is_env_sensor:
             entities.append(DuoFernRemotePairButton(coordinator, dev_code))
             entities.append(DuoFernRemoteUnpairButton(coordinator, dev_code))
 
@@ -116,8 +116,8 @@ async def async_setup_entry(
         )
         dev_type = dev_code.device_type
         # getStatus for all actuators (from %commandsStatus)
-        # Remotes have no get commands in FHEM
-        if not dev_code.is_remote:
+        # Remotes and environmental sensors have no get commands in FHEM
+        if not dev_code.is_remote and not dev_code.is_env_sensor:
             entities.append(DuoFernGetStatusButton(coordinator, dev_code))
 
         # Umweltsensor 00 channel: getWeather, getTime, getConfig, writeConfig, setTime

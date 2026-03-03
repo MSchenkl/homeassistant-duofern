@@ -121,6 +121,12 @@
       },
       "cover_block": {
         "name": "Block"
+      },
+      "sun_detected": {
+        "name": "Sun detected"
+      },
+      "wind_detected": {
+        "name": "Wind detected"
       }
     },
     "switch": {
@@ -307,7 +313,9 @@
       "channel_03": "Channel 3 – {subtype}",
       "channel_04": "Channel 4 – {subtype}",
       "channel_05": "Channel 5 – {subtype}",
-      "channel_06": "Channel 6 – {subtype}"
+      "channel_06": "Channel 6 – {subtype}",
+      "sun": "Sun – {subtype}",
+      "wind": "Wind – {subtype}"
     },
     "trigger_subtype": {
       "up": "Up",
@@ -317,7 +325,9 @@
       "stepDown": "Step Down",
       "pressed": "Pressed",
       "on": "On",
-      "off": "Off"
+      "off": "Off",
+      "start": "Start",
+      "end": "End"
     }
   }
 }
