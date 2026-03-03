@@ -261,10 +261,18 @@
     },
     "select": {
       "wind_direction": {
-        "name": "Windrichtung"
+        "name": "Windrichtung",
+        "state": {
+          "up": "Hoch",
+          "down": "Runter"
+        }
       },
       "rain_direction": {
-        "name": "Regenrichtung"
+        "name": "Regenrichtung",
+        "state": {
+          "up": "Hoch",
+          "down": "Runter"
+        }
       },
       "motor_dead_time": {
         "name": "Motorstillstandszeit"
