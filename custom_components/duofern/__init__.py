@@ -46,6 +46,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 
 from .const import CONF_DEVICE_CODE, CONF_PAIRED_DEVICES, CONF_SERIAL_PORT, DOMAIN
 from .coordinator import DuoFernCoordinator
@@ -143,6 +144,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: DuoFernConfigEntry) -> b
     # Forward setup to platforms (cover)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    # Clean up any devices/entities that were removed from the config
+    await _async_cleanup_stale_devices(hass, entry)
+
     return True
 
 
@@ -155,6 +159,52 @@ async def async_unload_entry(hass: HomeAssistant, entry: DuoFernConfigEntry) -> 
         await coordinator.async_disconnect()
 
     return unload_ok
+
+
+async def _async_cleanup_stale_devices(
+    hass: HomeAssistant, entry: DuoFernConfigEntry
+) -> None:
+    """Remove devices and entities that are no longer in the paired devices list.
+
+    Called after platform setup so all current entities are registered first.
+    Mirrors the cleanup already present in number.py, but centrally for all
+    platforms — so removing a device code from the config cleans up everything.
+    """
+    paired_hexes: set[str] = set()
+    coordinator: DuoFernCoordinator = entry.runtime_data
+    for hex_code in coordinator.data.devices:
+        # hex_code is already the full key (e.g. "43ABCD01" for channels,
+        # "61ABCD" for single devices) — match against device identifiers
+        paired_hexes.add(hex_code)
+
+    # Also keep the stick itself
+    system_hex = coordinator.system_code.hex
+    paired_hexes.add(system_hex)
+
+    device_reg = dr.async_get(hass)
+    entity_reg = er.async_get(hass)
+
+    for device_entry in dr.async_entries_for_config_entry(device_reg, entry.entry_id):
+        # Check if this device's identifier still exists in paired devices
+        device_idents = {
+            ident[1] for ident in device_entry.identifiers if ident[0] == DOMAIN
+        }
+        if device_idents and not device_idents.intersection(paired_hexes):
+            # Remove all entities for this device first
+            for entity_entry in er.async_entries_for_device(
+                entity_reg, device_entry.id, include_disabled_entities=True
+            ):
+                entity_reg.async_remove(entity_entry.entity_id)
+                _LOGGER.debug(
+                    "Removed stale entity %s (device %s no longer paired)",
+                    entity_entry.entity_id,
+                    device_entry.name,
+                )
+            device_reg.async_remove_device(device_entry.id)
+            _LOGGER.info(
+                "Removed stale device %s (no longer in paired devices)",
+                device_entry.name,
+            )
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
