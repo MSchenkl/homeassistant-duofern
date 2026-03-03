@@ -490,7 +490,6 @@ class DuoFernSwitch(CoordinatorEntity[DuoFernCoordinator], SwitchEntity):
             self._device_code, channel=self._channel_int
         )
 
-    @callback
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info, including firmware version when available."""
@@ -509,6 +508,7 @@ class DuoFernSwitch(CoordinatorEntity[DuoFernCoordinator], SwitchEntity):
             via_device=(DOMAIN, self.coordinator.system_code.hex),
         )
 
+    @callback
     def _handle_coordinator_update(self) -> None:
         self.async_write_ha_state()
 

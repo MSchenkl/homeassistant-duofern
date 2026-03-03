@@ -234,7 +234,6 @@ class DuoFernClimate(CoordinatorEntity[DuoFernCoordinator], ClimateEntity):
             if current is None or current <= TEMP_MIN:
                 await self.async_set_temperature(**{ATTR_TEMPERATURE: 20.0})
 
-    @callback
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info, including firmware version when available."""
@@ -250,6 +249,7 @@ class DuoFernClimate(CoordinatorEntity[DuoFernCoordinator], ClimateEntity):
             via_device=(DOMAIN, self.coordinator.system_code.hex),
         )
 
+    @callback
     def _handle_coordinator_update(self) -> None:
         state = self._device_state
         self.async_write_ha_state()

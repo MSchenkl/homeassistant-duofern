@@ -299,7 +299,6 @@ class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
     # Coordinator entity callbacks
     # ------------------------------------------------------------------
 
-    @callback
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info, including firmware version when available."""
@@ -314,6 +313,7 @@ class DuoFernCover(CoordinatorEntity[DuoFernCoordinator], CoverEntity):
             via_device=(DOMAIN, self.coordinator.system_code.hex),
         )
 
+    @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
         state = self._device_state

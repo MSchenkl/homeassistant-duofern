@@ -291,7 +291,6 @@ class DuoFernBinarySensor(CoordinatorEntity[DuoFernCoordinator], BinarySensorEnt
                 new_state,
             )
 
-    @callback
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info, including firmware version when available."""
@@ -307,6 +306,7 @@ class DuoFernBinarySensor(CoordinatorEntity[DuoFernCoordinator], BinarySensorEnt
             via_device=(DOMAIN, self.coordinator.system_code.hex),
         )
 
+    @callback
     def _handle_coordinator_update(self) -> None:
         data = self.coordinator.data
         state = data.devices.get(self._hex_code) if data else None
@@ -410,7 +410,6 @@ class DuoFernWindowSensor(CoordinatorEntity[DuoFernCoordinator], BinarySensorEnt
             self.async_write_ha_state()
         # Other events (e.g. the sibling opened/tilted) are ignored
 
-    @callback
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info, including firmware version when available."""
@@ -426,6 +425,7 @@ class DuoFernWindowSensor(CoordinatorEntity[DuoFernCoordinator], BinarySensorEnt
             via_device=(DOMAIN, self.coordinator.system_code.hex),
         )
 
+    @callback
     def _handle_coordinator_update(self) -> None:
         data = self.coordinator.data
         state = data.devices.get(self._hex_code) if data else None
@@ -511,7 +511,6 @@ class DuoFernObstacleSensor(CoordinatorEntity[DuoFernCoordinator], BinarySensorE
             return val
         return str(val).lower() in ("on", "1", "true", "yes")
 
-    @callback
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info, including firmware version when available."""
@@ -527,6 +526,7 @@ class DuoFernObstacleSensor(CoordinatorEntity[DuoFernCoordinator], BinarySensorE
             via_device=(DOMAIN, self.coordinator.system_code.hex),
         )
 
+    @callback
     def _handle_coordinator_update(self) -> None:
         data = self.coordinator.data
         state = data.devices.get(self._hex_code) if data else None

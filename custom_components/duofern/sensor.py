@@ -230,7 +230,6 @@ class DuoFernSensor(CoordinatorEntity[DuoFernCoordinator], SensorEntity):
             attrs["last_seen"] = state.last_seen
         return attrs
 
-    @callback
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info, including firmware version when available."""
@@ -246,6 +245,7 @@ class DuoFernSensor(CoordinatorEntity[DuoFernCoordinator], SensorEntity):
             via_device=(DOMAIN, self.coordinator.system_code.hex),
         )
 
+    @callback
     def _handle_coordinator_update(self) -> None:
         data = self.coordinator.data
         state = data.devices.get(self._hex_code) if data else None

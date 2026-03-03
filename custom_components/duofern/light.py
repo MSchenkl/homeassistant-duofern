@@ -175,7 +175,6 @@ class DuoFernLight(CoordinatorEntity[DuoFernCoordinator], LightEntity):
         """
         await self.coordinator.async_switch_off(self._device_code)
 
-    @callback
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info, including firmware version when available."""
@@ -191,6 +190,7 @@ class DuoFernLight(CoordinatorEntity[DuoFernCoordinator], LightEntity):
             via_device=(DOMAIN, self.coordinator.system_code.hex),
         )
 
+    @callback
     def _handle_coordinator_update(self) -> None:
         state = self._device_state
         self.async_write_ha_state()
