@@ -3,7 +3,7 @@
   "name": "Rademacher DuoFern",
   "codeowners": ["@MSchenkl"],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": ["usb"],
   "documentation": "https://github.com/MSchenkl/homeassistant-duofern",
   "issue_tracker": "https://github.com/MSchenkl/homeassistant-duofern/issues",
   "iot_class": "local_push",
@@ -12,7 +12,7 @@
     {
       "vid": "0403",
       "pid": "6001",
-      "description": "DuoFern USB-Stick",
+      "description": "duofern usb-stick",
       "manufacturer": "Rademacher"
     }
   ],
