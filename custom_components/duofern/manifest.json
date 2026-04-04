@@ -5,8 +5,8 @@
   "config_flow": true,
   "dependencies": ["usb"],
   "documentation": "https://github.com/MSchenkl/homeassistant-duofern",
-  "issue_tracker": "https://github.com/MSchenkl/homeassistant-duofern/issues",
   "iot_class": "local_push",
+  "issue_tracker": "https://github.com/MSchenkl/homeassistant-duofern/issues",
   "requirements": ["pyserial-asyncio-fast==0.16"],
   "usb": [
     {
