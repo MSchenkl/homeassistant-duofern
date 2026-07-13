@@ -3,13 +3,13 @@
     "step": {
       "user": {
         "title": "Rademacher DuoFern USB-Stick",
-        "description": "Configure the connection to your DuoFern USB stick.",
+        "description": "Configure a local or network connection to your DuoFern USB stick.",
         "data": {
-          "serial_port": "Serial Port",
+          "serial_port": "Serial Connection",
           "system_code": "System Code (6-digit hex, starts with 6F)"
         },
         "data_description": {
-          "serial_port": "The serial port path of the DuoFern USB stick (e.g. /dev/ttyUSB0).",
+          "serial_port": "A local serial path or ser2net URL (e.g. /dev/ttyUSB0, socket://192.168.1.20:2000, or rfc2217://192.168.1.20:2000).",
           "system_code": "The 6-digit hex code of your DuoFern system (starts with 6F, e.g. 6F1A2B). This is the dongle serial number."
         }
       },
@@ -25,7 +25,7 @@
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to the DuoFern stick. Check the serial port path.",
+      "cannot_connect": "Failed to connect to the DuoFern stick. Check the serial path or network URL.",
       "invalid_system_code": "Invalid system code. Must be 6 hex digits starting with 6F.",
       "invalid_device_code": "One or more device codes are invalid. Each must be exactly 6 hex digits.",
       "no_devices": "Please enter at least one device code.",
