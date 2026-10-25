@@ -1,5 +1,12 @@
 # Rademacher DuoFern Integration for Home Assistant
 
+> [!IMPORTANT]
+> **This repository is no longer maintained.** Active development continues in
+> **[irstmon/homeassistant-duofern](https://github.com/irstmon/homeassistant-duofern)** — a fork that
+> grew into a near-complete re-implementation based on the FHEM DuoFern modules, with support for all
+> DuoFern device types, `ser2net` network sticks, regular releases and HACS installation.
+> Please use that version and report issues there. Thanks to @irstmon for carrying this forward!
+
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
